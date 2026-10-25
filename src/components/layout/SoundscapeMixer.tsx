@@ -4,10 +4,10 @@ import { useCampfireStore } from '../../store/useCampfireStore'
 type Track = 'noiseVolume' | 'rainVolume' | 'crackleVolume' | 'binauralVolume'
 type AudioContextWithSinkId = AudioContext & { setSinkId?: (deviceId: string) => Promise<void> }
 const TRACKS: { key: Track; label: string; description: string }[] = [
-  { key: 'noiseVolume', label: '🌊 Deep Brown Noise', description: 'Low-passed procedural noise' },
-  { key: 'rainVolume', label: '🌧️ Warm Midnight Rain', description: 'Soft filtered pink noise' },
-  { key: 'crackleVolume', label: '🔥 Campfire Hearth Crackle', description: 'Gentle filtered ember texture' },
-  { key: 'binauralVolume', label: '🎧 Binaural 40Hz Gamma Focus Pulse', description: '200Hz / 240Hz stereo tone' },
+  { key: 'noiseVolume', label: 'Brown noise', description: 'Procedurally generated low-pass noise' },
+  { key: 'rainVolume', label: 'Rain ambience', description: 'Procedurally generated filtered noise' },
+  { key: 'crackleVolume', label: 'Fire crackle', description: 'Procedurally generated crackle texture' },
+  { key: 'binauralVolume', label: 'Binaural tone', description: '200 Hz left channel / 240 Hz right channel' },
 ]
 
 function makeNoiseBuffer(context: AudioContext, track: Track): AudioBuffer {
