@@ -5,10 +5,10 @@ import type { SolverLesson, WhiteboardMark } from '../../types/campfire'
 type Tool = WhiteboardMark['tool']
 type BoardBackground = 'dot-grid' | 'graph' | 'obsidian'
 const TOOLS: { id: Tool; label: string }[] = [
-  { id: 'pen', label: '✏️ Pen' }, { id: 'highlighter', label: '🖍️ Highlight' },
-  { id: 'line', label: '📏 Arrow' }, { id: 'rectangle', label: '⬜ Box' },
-  { id: 'circle', label: '◯ Circle' }, { id: 'text', label: '🔤 Text' },
-  { id: 'laser', label: '🔴 Laser' }, { id: 'eraser', label: '🧽 Erase' },
+  { id: 'pen', label: 'Pen' }, { id: 'highlighter', label: 'Highlight' },
+  { id: 'line', label: 'Arrow' }, { id: 'rectangle', label: 'Rectangle' },
+  { id: 'circle', label: 'Circle' }, { id: 'text', label: 'Text' },
+  { id: 'laser', label: 'Laser' }, { id: 'eraser', label: 'Eraser' },
 ]
 const COLORS = ['#FFFFFF', '#22C55E', '#38BDF8', '#F59E0B', '#F43F5E', '#A855F7']
 const EMPTY_MARKS: WhiteboardMark[] = []
@@ -75,7 +75,7 @@ export function Whiteboard() {
   const [questionDraft, setQuestionDraft] = useState<{ roomId: string | null; value: string } | null>(null)
   const [followUp, setFollowUp] = useState('')
   const [panelOpen, setPanelOpen] = useState(true)
-  const [lessonOverride, setLessonOverride] = useState<SolverLesson | null>(null)
+  const [lessonOverride, setLessonOverride] = useState<{ roomId: string; lesson: SolverLesson } | null>(null)
   const [tutorError, setTutorError] = useState('')
   const marks = room?.whiteboardMarks ?? EMPTY_MARKS
   const question = room && questionDraft && questionDraft.roomId === room.id ? questionDraft.value : room?.solverQuestion ?? ''
@@ -159,14 +159,11 @@ export function Whiteboard() {
       if (activeRoom) current.setWhiteboardMarks(activeRoom.whiteboardMarks.filter((item) => item.id !== mark.id))
     }, 900)
   }
-  const lesson = lessonOverride ?? room.solverLesson
-  const lessonSteps = lesson?.steps ?? [
-    { title: 'Model the question', content: 'Identify the knowns, unknowns, assumptions, and governing model.', why: 'The model determines the correct equations and boundary conditions.' },
-    { title: 'Draw the relationships', content: 'Represent the structure with labeled shapes and directional arrows.', why: 'A visual map exposes direction, sequence, and dependencies.' },
-    { title: 'Check the result', content: 'Test units, signs, and limiting cases against the original question.', why: 'Independent checks catch common reasoning mistakes.' },
-  ]
+  const lesson = lessonOverride?.roomId === room.id ? lessonOverride.lesson : room.solverLesson
+  const lessonSteps = lesson?.steps ?? []
   const drawLessonStep = (index: number) => {
     const step = lessonSteps[Math.min(index, lessonSteps.length - 1)]
+    if (!step) return
     const y = 0.18 + (index % 4) * 0.16
     const newMarks: WhiteboardMark[] = [
       { id: crypto.randomUUID(), tool: 'rectangle', color: '#38BDF8', points: [{ x: 0.12, y }, { x: 0.68, y: y + 0.12 }] },
@@ -182,61 +179,75 @@ export function Whiteboard() {
     setLessonStep(lessonStep + 1)
   }
   const startLesson = async () => {
-    const topic = question.trim() || lesson?.question || room.topic
-    setQuestion(topic)
-    setLessonStep(1)
+    const topic = question.trim()
+    if (!topic) {
+      setTutorError('Enter a question before generating a lesson.')
+      return
+    }
+    if (!profile.aiBaseUrl.trim()) {
+      setTutorError('Configure an OpenAI-compatible endpoint in Settings → AI Endpoint to generate a lesson.')
+      return
+    }
+
     setTutorError('')
-    let generated = lesson
     try {
       const response = await fetch(profile.aiBaseUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: AbortSignal.timeout(7000),
-        body: JSON.stringify({ model: profile.aiModel || 'auto', messages: [{ role: 'system', content: 'Return JSON lesson with concept, formula, steps array of title/content/why, and finalAnswer. Keep steps visual and concise.' }, { role: 'user', content: topic }] }),
+        body: JSON.stringify({
+          model: profile.aiModel || 'auto',
+          messages: [
+            { role: 'system', content: 'Return JSON lesson with concept, formula, steps array of title/content/why, and finalAnswer. Keep steps visual and concise. Do not invent problem values.' },
+            { role: 'user', content: topic },
+          ],
+        }),
       })
-      if (!response.ok) throw new Error(`Tutor endpoint returned HTTP ${response.status}.`)
+      if (!response.ok) throw new Error('Tutor endpoint returned HTTP ' + response.status + '.')
       const payload: unknown = await response.json()
-      const content = payload && typeof payload === 'object' && 'choices' in payload ? ((payload as { choices?: { message?: { content?: string } }[] }).choices?.[0]?.message?.content ?? '') : ''
+      const content = payload && typeof payload === 'object' && 'choices' in payload
+        ? ((payload as { choices?: { message?: { content?: string } }[] }).choices?.[0]?.message?.content ?? '')
+        : ''
       const parsed = JSON.parse(content) as Partial<SolverLesson>
-      const steps = Array.isArray(parsed.steps) ? parsed.steps.filter((step) => typeof step.title === 'string' && typeof step.content === 'string' && typeof step.why === 'string') : []
-      if (!parsed.concept || !parsed.formula || !parsed.finalAnswer || !steps.length) throw new Error('Tutor response was incomplete.')
-      generated = { question: topic, concept: parsed.concept, formula: parsed.formula, steps, finalAnswer: parsed.finalAnswer, source: 'local model' }
-      saveSolverLesson(generated)
-      setLessonOverride(generated)
-    } catch (error) {
-      setTutorError(error instanceof Error ? `Using the built-in tutor guide. ${error.message}` : 'Using the built-in tutor guide.')
-      if (!generated) generated = {
+      const steps = Array.isArray(parsed.steps)
+        ? parsed.steps.filter((step) => typeof step.title === 'string' && typeof step.content === 'string' && typeof step.why === 'string')
+        : []
+      if (!parsed.concept || !parsed.formula || !parsed.finalAnswer || !steps.length) {
+        throw new Error('Tutor response was incomplete.')
+      }
+
+      const generated: SolverLesson = {
         question: topic,
-        concept: 'Model the question, represent its relationships visually, and validate the result with boundary checks.',
-        formula: 'Define known values → select governing relationship → check units and assumptions.',
-        steps: [
-          { title: 'Identify the model', content: `Translate “${topic}” into variables and a governing model.`, why: 'The model defines which relationships apply.' },
-          { title: 'Draw relationships', content: 'Label the entities and show their direction or order with arrows.', why: 'An explicit diagram makes dependencies and direction easier to inspect.' },
-          { title: 'Verify', content: 'Check units, edge cases, and the requested conclusion.', why: 'Independent checks catch assumptions and boundary errors.' },
-        ],
-        finalAnswer: 'Confirm the result matches the prompt and documented assumptions.',
-        source: 'offline guide',
+        concept: parsed.concept,
+        formula: parsed.formula,
+        steps,
+        finalAnswer: parsed.finalAnswer,
+        source: 'local model',
       }
       saveSolverLesson(generated)
-      setLessonOverride(generated)
+      setLessonOverride({ roomId: room.id, lesson: generated })
+      setLessonStep(1)
+
+      const first = generated.steps[0]
+      const y = 0.18
+      const newMarks: WhiteboardMark[] = [
+        { id: crypto.randomUUID(), tool: 'rectangle', color: '#38BDF8', points: [{ x: 0.12, y }, { x: 0.68, y: y + 0.12 }] },
+        { id: crypto.randomUUID(), tool: 'text', color: '#FFFFFF', points: [{ x: 0.15, y: y + 0.07 }], text: '1. ' + first.title },
+        { id: crypto.randomUUID(), tool: 'line', color: '#22C55E', points: [{ x: 0.28, y: y + 0.18 }, { x: 0.56, y: y + 0.18 }] },
+        { id: crypto.randomUUID(), tool: 'text', color: '#F59E0B', points: [{ x: 0.15, y: y + 0.26 }], text: first.content.slice(0, 80) },
+      ]
+      newMarks.forEach((mark, index) => window.setTimeout(() => {
+        const current = useCampfireStore.getState()
+        if (current.activeRoomId !== room.id) return
+        const currentRoom = current.rooms.find((item) => item.id === room.id)
+        if (currentRoom) current.setWhiteboardMarks([...currentRoom.whiteboardMarks, mark])
+      }, index * 140))
+    } catch (error) {
+      setTutorError(error instanceof Error ? error.message : 'Tutor request failed.')
     }
-    const first = generated.steps[0]
-    const y = 0.18
-    const newMarks: WhiteboardMark[] = [
-      { id: crypto.randomUUID(), tool: 'rectangle', color: '#38BDF8', points: [{ x: 0.12, y }, { x: 0.68, y: y + 0.12 }] },
-      { id: crypto.randomUUID(), tool: 'text', color: '#FFFFFF', points: [{ x: 0.15, y: y + 0.07 }], text: `1. ${first.title}` },
-      { id: crypto.randomUUID(), tool: 'line', color: '#22C55E', points: [{ x: 0.28, y: y + 0.18 }, { x: 0.56, y: y + 0.18 }] },
-      { id: crypto.randomUUID(), tool: 'text', color: '#F59E0B', points: [{ x: 0.15, y: y + 0.26 }], text: first.content.slice(0, 80) },
-    ]
-    newMarks.forEach((mark, index) => window.setTimeout(() => {
-      const current = useCampfireStore.getState()
-      if (current.activeRoomId !== room.id) return
-      const currentRoom = current.rooms.find((item) => item.id === room.id)
-      if (currentRoom) current.setWhiteboardMarks([...currentRoom.whiteboardMarks, mark])
-    }, index * 140))
   }
   const speak = () => {
-    if (!('speechSynthesis' in window)) return
+    if (!lessonSteps.length || !('speechSynthesis' in window)) return
     const step = lessonSteps[Math.max(0, Math.min(lessonStep - 1, lessonSteps.length - 1))]
     window.speechSynthesis.cancel()
     window.speechSynthesis.speak(new SpeechSynthesisUtterance(`${step.title}. ${step.content} Why? ${step.why}`))
@@ -265,29 +276,30 @@ export function Whiteboard() {
       <select value={background} onChange={(event) => setBackground(event.target.value as BoardBackground)} aria-label="Board background" className="ml-auto rounded-md border border-white/10 bg-[#111114] px-2 py-1 text-[10px] text-neutral-300"><option value="dot-grid">Dot Grid</option><option value="graph">Coordinate Graph</option><option value="obsidian">Pure Obsidian</option></select>
       <button onClick={undo} disabled={!marks.length} title="Undo" className="rounded px-2 text-xs text-neutral-300 disabled:opacity-30">↩</button>
       <button onClick={redo} disabled={!redoStack.length} title="Redo" className="rounded px-2 text-xs text-neutral-300 disabled:opacity-30">↪</button>
-      <button onClick={() => { setWhiteboardMarks([]); setRedoStack([]) }} title="Clear board" className="rounded px-2 text-xs text-neutral-300">🗑️</button>
-      <button onClick={exportPng} title="Export board PNG" className="rounded px-2 text-xs text-neutral-300">📸</button>
+      <button onClick={() => { setWhiteboardMarks([]); setRedoStack([]) }} title="Clear board" className="rounded px-2 text-xs text-neutral-300">Clear</button>
+      <button onClick={exportPng} title="Export board PNG" className="rounded px-2 text-xs text-neutral-300">Export PNG</button>
     </div>
     <div className="flex min-h-0 flex-1 gap-2">
       <div className="relative min-w-0 flex-1 overflow-hidden rounded-xl border border-white/10">
         <canvas ref={canvasRef} className="h-full w-full touch-none" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerUp} />
         <div className="absolute bottom-3 left-3 right-3 flex gap-2 rounded-xl border border-white/10 bg-[#0B0B0E]/90 p-2 backdrop-blur-xl">
-          <input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="🎓 Ask AI Tutor to Teach & Draw on Board..." className="min-w-0 flex-1 bg-transparent px-2 text-xs text-white outline-none" />
-          <button onClick={startLesson} className="rounded-lg bg-white px-3 py-2 text-[10px] font-semibold text-black">🎓 Teach Me on Board</button>
+          <input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Enter a question to generate a lesson" className="min-w-0 flex-1 bg-transparent px-2 text-xs text-white outline-none" />
+          <button onClick={startLesson} className="rounded-lg bg-white px-3 py-2 text-[10px] font-semibold text-black">Generate lesson</button>
         </div>
       </div>
       {panelOpen && <aside className="flex w-[240px] shrink-0 flex-col rounded-xl border border-white/10 bg-[#0B0B0E]/90 p-3">
-        <div className="flex items-center justify-between"><h3 className="text-xs font-semibold text-white">AI Tutor Lesson</h3><button onClick={() => setPanelOpen(false)} aria-label="Collapse tutor panel" className="text-neutral-500">›</button></div>
+        <div className="flex items-center justify-between"><h3 className="text-xs font-semibold text-white">Lesson</h3><button onClick={() => setPanelOpen(false)} aria-label="Collapse tutor panel" className="text-neutral-500">›</button></div>
         <div className="scrollbar-thin mt-3 flex-1 overflow-y-auto">
+          {lessonSteps.length === 0 && <p className="py-4 text-[10px] leading-relaxed text-neutral-500">No lesson yet. Enter a question and configure a model endpoint to generate one.</p>}
           {lessonSteps.map((step, index) => <button key={step.title} onClick={() => { drawLessonStep(index); setLessonStep(index + 1) }} className={`mb-2 w-full rounded-lg border p-2 text-left ${lessonStep === index + 1 ? 'border-sky-400/30 bg-sky-400/[0.06]' : 'border-white/[0.06]'}`}><span className="text-[10px] font-semibold text-neutral-200">{index + 1}. {step.title}</span><span className="mt-1 block text-[10px] leading-relaxed text-neutral-500">{step.content}</span></button>)}
         </div>
         {tutorError && <p role="status" className="my-1 text-[9px] text-amber-300">{tutorError}</p>}
         <div className="flex gap-1"><button onClick={() => setLessonStep((value) => Math.max(0, value - 1))} className="flex-1 rounded border border-white/10 py-1.5 text-[9px] text-neutral-300">◀ Prev Step</button><button onClick={teachNext} disabled={lessonStep >= lessonSteps.length} className="flex-1 rounded border border-white/10 py-1.5 text-[9px] text-neutral-300 disabled:opacity-40">▶ Next Step</button></div>
-        <button onClick={speak} className="mt-1 rounded border border-white/10 py-1.5 text-[9px] text-neutral-300">🔊 Read Aloud</button>
-        <div className="mt-2 flex gap-1"><input value={followUp} onChange={(event) => setFollowUp(event.target.value)} placeholder="Ask a follow-up…" className="glass-input min-w-0 flex-1 rounded px-2 text-[9px] text-white" /><button onClick={addFollowUp} className="rounded bg-white/10 px-2 text-[9px] text-white">Add</button></div>
+        <button onClick={speak} className="mt-1 rounded border border-white/10 py-1.5 text-[9px] text-neutral-300">Read aloud</button>
+        <div className="mt-2 flex gap-1"><input value={followUp} onChange={(event) => setFollowUp(event.target.value)} placeholder="Add a note…" className="glass-input min-w-0 flex-1 rounded px-2 text-[9px] text-white" /><button onClick={addFollowUp} className="rounded bg-white/10 px-2 text-[9px] text-white">Add</button></div>
       </aside>}
       {!panelOpen && <button onClick={() => setPanelOpen(true)} className="rounded border border-white/10 px-2 text-xs text-neutral-400">‹</button>}
     </div>
-    <div className="mt-2 flex flex-wrap gap-1">{['Draw & explain Solid Sphere Gravitational Potential', 'Draw Deque Sliding Window step-by-step', 'Draw SN1 vs SN2 Reaction Mechanism', 'Draw Binary Search Tree Rotation'].map((chip) => <button key={chip} onClick={() => setQuestion(chip)} className="rounded-full border border-white/[0.07] px-2 py-1 text-[9px] text-neutral-500 hover:text-neutral-200">{chip}</button>)}</div>
+
   </section>
 }
