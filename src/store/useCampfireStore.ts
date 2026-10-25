@@ -46,7 +46,7 @@ export const useCampfireStore = create<CampfireStore>((set, get) => ({
   profile: {
     displayName: 'You', username: 'you', pronouns: '', bio: '',
     customStatus: '', avatarInitials: 'YO', avatarColor: AVATAR_COLORS[2],
-    status: 'online', muted: true, brownNoise: false,
+    status: 'online', muted: true,
     screenSharing: false, screenStream: null, aiBaseUrl: '', aiModel: '',
     rainVolume: 0, crackleVolume: 0, binauralVolume: 0, inputVolume: 80, outputVolume: 80,
     inputDeviceId: '', outputDeviceId: '', noiseVolume: 0,
