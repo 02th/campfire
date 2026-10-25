@@ -118,7 +118,7 @@ export function UserSettingsModal({ onClose }: { onClose: () => void }) {
             {!supportsDeviceEnumeration && <p role="status" className="text-[10px] text-amber-300">This browser does not support listing audio devices.</p>}
             {slider('Mic Input Volume', 'inputVolume')}{slider('Master Output Volume', 'outputVolume')}
             <div className="space-y-2 text-xs text-neutral-400">Mic Test Meter · {micLevel}%<div className="h-2 overflow-hidden rounded bg-white/10"><div className="h-full bg-emerald-500 transition-[width] duration-75" style={{ width: `${micLevel}%` }} /></div><button onClick={toggleMicTest} className="rounded border border-white/10 px-3 py-1.5 text-[10px] text-neutral-300">{micTesting ? 'Stop mic test' : 'Start mic test'}</button>{micError && <p role="status" className="text-[10px] text-amber-300">{micError}</p>}</div>
-            {toggle('Echo Cancellation', 'echoCancellation')}{toggle('Noise Suppression (Krisp Mode)', 'noiseSuppression')}{toggle('Auto Gain Control', 'autoGainControl')}
+            {toggle('Echo Cancellation', 'echoCancellation')}{toggle('Noise suppression', 'noiseSuppression')}{toggle('Auto Gain Control', 'autoGainControl')}
           </div>}
           {section === 'Soundscape Mixer' && <div className="space-y-4">
             {slider('Deep Brown Noise', 'noiseVolume')}{slider('Warm Midnight Rain', 'rainVolume')}{slider('Campfire Crackle', 'crackleVolume')}{slider('Binaural Focus Pulse', 'binauralVolume')}
