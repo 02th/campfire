@@ -56,11 +56,9 @@ export function RightChatSidebar() {
     if (!text || !room) return
     if (text === '/stoke') {
       addFuel()
-      sendMessage('🔥 Stoke! +15 minutes added to this campfire.')
     } else if (text === '/pomodoro') {
       updateRoom({ timerMode: 'pomodoro' })
       resetTimer()
-      sendMessage('🍅 Pomodoro sprint started · 25:00 focus.')
     } else if (text.startsWith('/shrug')) {
       const rest = text.slice('/shrug'.length).trim()
       sendReply(`${rest ? `${rest} ` : ''}¯\\_(ツ)_/¯`, replyTo ?? undefined)
