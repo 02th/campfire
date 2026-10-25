@@ -1,5 +1,5 @@
 import { Flame, X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { cn } from '../../lib/cn'
 import { useCampfireStore } from '../../store/useCampfireStore'
 import type { TimerMode } from '../../types/campfire'
@@ -28,11 +28,22 @@ export function CreateCampfireModal() {
   const open = useCampfireStore((s) => s.isCreateModalOpen)
   const closeCreateModal = useCampfireStore((s) => s.closeCreateModal)
   const createRoom = useCampfireStore((s) => s.createRoom)
+  const setActiveSupplyTab = useCampfireStore((s) => s.setActiveSupplyTab)
 
   const [name, setName] = useState('')
   const [topic, setTopic] = useState('')
   const [timerMode, setTimerMode] = useState<TimerMode>('countdown')
   const [durationMinutes, setDurationMinutes] = useState(60)
+  const [template, setTemplate] = useState('Dev Sprint')
+
+  useEffect(() => {
+    if (!open) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeCreateModal()
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [open, closeCreateModal])
 
   if (!open) return null
 
@@ -41,6 +52,7 @@ export function CreateCampfireModal() {
     setTopic('')
     setTimerMode('countdown')
     setDurationMinutes(60)
+    setTemplate('Dev Sprint')
   }
 
   const handleCreate = () => {
@@ -50,6 +62,9 @@ export function CreateCampfireModal() {
       timerMode,
       durationMinutes,
     })
+    if (template === 'Whiteboard Jam') setActiveSupplyTab('whiteboard')
+    else if (template === 'Exam Cram') setActiveSupplyTab('solvely')
+    else setActiveSupplyTab('dev-rig')
     reset()
   }
 
@@ -80,7 +95,7 @@ export function CreateCampfireModal() {
           <button
             type="button"
             onClick={closeCreateModal}
-            className="rounded-xl p-1.5 text-neutral-500 transition-all duration-300 hover:bg-white/[0.07] hover:text-white"
+            className="rounded-xl p-1.5 text-neutral-500 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu active:scale-[0.97] hover:bg-white/[0.07] hover:text-white"
             aria-label="Close"
           >
             <X className="h-4 w-4" />
@@ -96,10 +111,17 @@ export function CreateCampfireModal() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Midnight System Design"
-              className="glass-input w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none placeholder:text-neutral-600"
+              className="glass-input w-full select-text rounded-xl px-3 py-2.5 text-sm text-white outline-none placeholder:text-neutral-600"
               autoFocus
             />
           </label>
+
+          <div className="space-y-2">
+            <span className="text-xs font-medium uppercase tracking-wider text-neutral-500">Preset template</span>
+            <div className="grid grid-cols-3 gap-2">
+              {(['Dev Sprint', 'Exam Cram', 'Whiteboard Jam'] as const).map((item) => <button key={item} type="button" onClick={() => { setTemplate(item); if (item === 'Exam Cram') { setName('Exam Cram'); setTopic('Focused exam revision and worked problems') } else if (item === 'Whiteboard Jam') { setName('Whiteboard Jam'); setTopic('Draw and explain ideas together') } else { setName('Dev Sprint'); setTopic('Build, test, and share code') } }} className={cn('rounded-lg border px-2 py-2 text-[10px]', template === item ? 'border-white/25 bg-white/10 text-white' : 'border-white/10 text-neutral-400 hover:bg-white/[0.05]')}>{item === 'Dev Sprint' ? '💻' : item === 'Exam Cram' ? '🧬' : '🎨'} {item}</button>)}
+            </div>
+          </div>
 
           <label className="block space-y-1.5">
             <span className="text-xs font-medium uppercase tracking-wider text-neutral-500">
@@ -109,7 +131,7 @@ export function CreateCampfireModal() {
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="What are you grinding tonight?"
-              className="glass-input w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none placeholder:text-neutral-600"
+              className="glass-input w-full select-text rounded-xl px-3 py-2.5 text-sm text-white outline-none placeholder:text-neutral-600"
             />
           </label>
 
@@ -124,7 +146,7 @@ export function CreateCampfireModal() {
                   type="button"
                   onClick={() => setTimerMode(mode.id)}
                   className={cn(
-                    'rounded-xl px-3 py-3 text-left transition-all duration-300',
+                    'rounded-xl px-3 py-3 text-left transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu active:scale-[0.97]',
                     timerMode === mode.id
                       ? 'glass-card-active'
                       : 'glass-card border-white/10',
@@ -162,7 +184,7 @@ export function CreateCampfireModal() {
                   type="button"
                   onClick={() => setDurationMinutes(mins)}
                   className={cn(
-                    'rounded-lg border px-3 py-1.5 text-xs font-medium transition-all duration-300',
+                    'rounded-lg border px-3 py-1.5 text-xs font-medium transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu active:scale-[0.97]',
                     durationMinutes === mins
                       ? 'border-white/40 bg-white/[0.1] text-white'
                       : 'border-white/10 text-neutral-500 hover:border-white/25 hover:bg-white/[0.05] hover:text-white',
@@ -188,14 +210,14 @@ export function CreateCampfireModal() {
           <button
             type="button"
             onClick={closeCreateModal}
-            className="rounded-xl px-4 py-2 text-sm text-neutral-400 transition-all duration-300 hover:bg-white/[0.05] hover:text-white"
+            className="rounded-xl px-4 py-2 text-sm text-neutral-400 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu active:scale-[0.97] hover:bg-white/[0.05] hover:text-white"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleCreate}
-            className="glass-btn-primary rounded-xl px-4 py-2 text-sm font-semibold"
+            className="glass-btn-primary rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu active:scale-[0.97]"
           >
             Ignite
           </button>

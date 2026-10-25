@@ -11,8 +11,8 @@
   --color-campfire-voice: #10b981;
   --color-campfire-muted: #a3a3a3;
   --color-campfire-text: #ffffff;
-  --font-sans: "SF Pro Display", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "SF Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  --font-sans: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
 }
 
 /* Live-tunable liquid-glass tokens (Theme Inspector) */
@@ -54,6 +54,42 @@ body {
   overflow: hidden;
 }
 
+button {
+  transition-property: all;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+button:disabled:active {
+  transform: none;
+}
+
+.tabular-nums,
+time,
+.monaco-editor .line-numbers {
+  font-variant-numeric: tabular-nums;
+}
+
+.monaco-editor .line-numbers {
+  user-select: none;
+}
+
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+.high-contrast * {
+  border-color: rgba(255, 255, 255, 0.24) !important;
+}
+
 /* Liquid glass panel — frosted translucent surface */
 .glass-panel {
   background: rgba(var(--cf-glass-rgb), var(--cf-glass-opacity));
@@ -81,7 +117,7 @@ body {
   -webkit-backdrop-filter: blur(var(--cf-blur-card));
   border: 1px solid rgba(var(--cf-border-rgb), var(--cf-border-opacity));
   box-shadow: inset 0 1px 0 0 rgba(var(--cf-glass-rgb), calc(var(--cf-highlight-opacity) * 0.85));
-  transition: all 0.3s ease;
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-card:hover {
@@ -105,7 +141,7 @@ body {
   -webkit-backdrop-filter: blur(var(--cf-blur-btn));
   border: 1px solid rgba(var(--cf-border-rgb), calc(var(--cf-border-opacity) + 0.02));
   box-shadow: inset 0 1px 0 0 rgba(var(--cf-glass-rgb), calc(var(--cf-highlight-opacity) + 0.02));
-  transition: all 0.3s ease;
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-btn:hover {
@@ -121,7 +157,7 @@ body {
     inset 0 1px 0 0 rgba(255, 255, 255, 1),
     0 0 20px rgba(var(--cf-glow-rgb), calc(0.15 * var(--cf-glow-intensity))),
     0 4px 16px rgba(0, 0, 0, 0.4);
-  transition: all 0.3s ease;
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-btn-primary:hover {
@@ -138,7 +174,7 @@ body {
   -webkit-backdrop-filter: blur(var(--cf-blur-btn));
   border: 1px solid rgba(var(--cf-border-rgb), var(--cf-border-opacity));
   box-shadow: inset 0 1px 0 0 rgba(var(--cf-glass-rgb), calc(var(--cf-highlight-opacity) * 0.7));
-  transition: all 0.3s ease;
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-input:focus,

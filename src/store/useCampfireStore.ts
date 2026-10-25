@@ -2,7 +2,14 @@ import { create } from 'zustand'
 import type {
   CampfireRoom,
   CampfireStore,
+  CodeLanguage,
   CreateCampfireInput,
+  CampfireProfile,
+  RoomCategory,
+  SolverLesson,
+  WorkspaceFile,
+  QuizQuestion,
+  WhiteboardMark,
   SupplyTab,
 } from '../types/campfire'
 
@@ -35,6 +42,17 @@ function formatSeedMessage(
   }
 }
 
+function initialWorkspace(code: string, language: CodeLanguage): WorkspaceFile[] {
+  const mainName = language === 'python' ? 'main.py' : `main.${language === 'javascript' ? 'js' : language === 'cpp' ? 'cpp' : 'ts'}`
+  return [
+    { id: 'file-main', name: mainName, content: code },
+    { id: 'file-tests', name: 'test_suite.py', content: '# Add focused tests here\n' },
+    { id: 'file-algorithm', name: 'algorithm.ts', content: '// Shared algorithm notes\n' },
+    { id: 'file-index', name: 'index.html', content: '<!doctype html>\\n<html><body><h1>Campfire preview</h1></body></html>' },
+    { id: 'file-readme', name: 'README.md', content: '# Shared project\\n\\nRoom notes and project setup.' },
+  ]
+}
+
 function buildDefaultRooms(): CampfireRoom[] {
   const now = Date.now()
 
@@ -48,8 +66,56 @@ function buildDefaultRooms(): CampfireRoom[] {
       initialSeconds: 3 * 3600,
       isBurning: true,
       activeSupplyTab: 'dev-rig',
+      code: `# Late Night Python & DSA
+def max_sliding_window(nums: list[int], k: int) -> list[int]:
+    """O(n) deque approach — drop your variant below."""
+    from collections import deque
+    dq, out = deque(), []
+    for i, n in enumerate(nums):
+        while dq and dq[0] <= i - k:
+            dq.popleft()
+        while dq and nums[dq[-1]] < n:
+            dq.pop()
+        dq.append(i)
+        if i >= k - 1:
+            out.append(nums[dq[0]])
+    return out
+
+print(max_sliding_window([1,3,-1,-3,5,3,6,7], 3))`,
+      codeLanguage: 'python',
+      scratchpad: '',
+      pinnedLinks: [],
       createdAt: now - 40 * 60_000,
       lastActivityAt: now,
+      category: 'DSA & Coding',
+      slowmode: false,
+      workspaceFiles: initialWorkspace(
+        `# Late Night Python & DSA
+def max_sliding_window(nums: list[int], k: int) -> list[int]:
+    """O(n) deque approach — drop your variant below."""
+    from collections import deque
+    dq, out = deque(), []
+    for i, n in enumerate(nums):
+        while dq and dq[0] <= i - k:
+            dq.popleft()
+        while dq and nums[dq[-1]] < n:
+            dq.pop()
+        dq.append(i)
+        if i >= k - 1:
+            out.append(nums[dq[0]])
+    return out
+
+print(max_sliding_window([1,3,-1,-3,5,3,6,7], 3))`,
+        'python',
+      ),
+      openFileIds: ['file-main'],
+      activeFileId: 'file-main',
+      snapshots: [],
+      whiteboardMarks: [],
+      solverQuestion: '',
+      solverLesson: null,
+      studyCards: [],
+      quizQuestions: [],
       participants: [
         {
           id: 'p1',
@@ -110,9 +176,24 @@ function buildDefaultRooms(): CampfireRoom[] {
       initialSeconds: 25 * 60,
       isBurning: true,
       pomodoroPhase: 'focus',
-      activeSupplyTab: 'study-board',
+      activeSupplyTab: 'scratchpad',
+      code: 'console.log("Organic chemistry study group")',
+      codeLanguage: 'javascript',
+      scratchpad: 'SN1: two-step, carbocation intermediate.\nSN2: one-step, backside attack.',
+      pinnedLinks: [],
       createdAt: now - 25 * 60_000,
       lastActivityAt: now,
+      category: 'Chem & Bio',
+      slowmode: false,
+      workspaceFiles: initialWorkspace('console.log("Organic chemistry study group")', 'javascript'),
+      openFileIds: ['file-main'],
+      activeFileId: 'file-main',
+      snapshots: [],
+      whiteboardMarks: [],
+      solverQuestion: '',
+      solverLesson: null,
+      studyCards: [],
+      quizQuestions: [],
       participants: [
         {
           id: 'p4',
@@ -159,9 +240,24 @@ function buildDefaultRooms(): CampfireRoom[] {
       remainingSeconds: 55 * 60 + 7,
       initialSeconds: 60 * 60,
       isBurning: true,
-      activeSupplyTab: 'screen-share',
+      activeSupplyTab: 'pinned-links',
+      code: 'console.log("Welcome to the beat lab")',
+      codeLanguage: 'javascript',
+      scratchpad: '',
+      pinnedLinks: [],
       createdAt: now - 15 * 60_000,
       lastActivityAt: now,
+      category: 'Music & Beats',
+      slowmode: false,
+      workspaceFiles: initialWorkspace('console.log("Welcome to the beat lab")', 'javascript'),
+      openFileIds: ['file-main'],
+      activeFileId: 'file-main',
+      snapshots: [],
+      whiteboardMarks: [],
+      solverQuestion: '',
+      solverLesson: null,
+      studyCards: [],
+      quizQuestions: [],
       participants: [
         {
           id: 'p6',
@@ -203,12 +299,23 @@ function buildDefaultRooms(): CampfireRoom[] {
   ]
 }
 
-const FUEL_SECONDS = 30 * 60
+const FUEL_SECONDS = 15 * 60
 
 export const useCampfireStore = create<CampfireStore>((set, get) => ({
   rooms: buildDefaultRooms(),
   activeRoomId: 'room_python_dsa',
   isCreateModalOpen: false,
+  profile: {
+    displayName: 'You', username: 'you', pronouns: '', bio: '',
+    customStatus: '', avatarInitials: 'YO', avatarColor: AVATAR_COLORS[2],
+    status: 'online', muted: false, deafened: false, brownNoise: false,
+    screenSharing: false, screenStream: null, simulatedStream: false, aiBaseUrl: 'http://127.0.0.1:31415/v1/chat/completions', aiModel: 'auto',
+    rainVolume: 0, crackleVolume: 0, binauralVolume: 0, inputVolume: 80, outputVolume: 80,
+    inputDeviceId: '', outputDeviceId: '', noiseVolume: 0,
+    noiseTone: 'Balanced Rain', echoCancellation: true, noiseSuppression: true,
+    autoGainControl: true, reducedMotion: false, highContrastBorders: false,
+    messageDensity: 'cozy', fontScale: 13,
+  },
 
   setActiveRoom: (roomId) => set({ activeRoomId: roomId }),
 
@@ -236,7 +343,342 @@ export const useCampfireStore = create<CampfireStore>((set, get) => ({
     }))
   },
 
+  updateProfile: (updates: Partial<CampfireProfile>) =>
+    set((state) => ({
+      profile: { ...state.profile, ...updates },
+      rooms: state.rooms.map((room) => ({
+        ...room,
+        participants: room.participants.map((participant) =>
+          participant.id === 'you'
+            ? {
+                ...participant,
+                name: updates.displayName ?? state.profile.displayName,
+                avatarColor: updates.avatarColor ?? state.profile.avatarColor,
+                isMuted: updates.muted ?? state.profile.muted,
+                status: updates.status ?? state.profile.status,
+                customStatus: updates.customStatus ?? state.profile.customStatus,
+              }
+            : participant,
+        ),
+        messages: room.messages.map((message) =>
+          message.author === state.profile.displayName || message.author === 'You'
+            ? {
+                ...message,
+                author: updates.displayName ?? state.profile.displayName,
+                avatarColor: updates.avatarColor ?? state.profile.avatarColor,
+              }
+            : message,
+        ),
+      })),
+    })),
+
+  updateRoom: (updates) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({
+      rooms: state.rooms.map((room) => room.id === id ? { ...room, ...updates } : room),
+    }))
+  },
+
+  adjustTimer: (seconds) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({
+      rooms: state.rooms.map((room) => room.id === id
+        ? { ...room, remainingSeconds: Math.max(0, room.remainingSeconds + seconds), initialSeconds: Math.max(room.initialSeconds, room.remainingSeconds + seconds), isBurning: true }
+        : room),
+    }))
+  },
+
+  resetTimer: () => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({
+      rooms: state.rooms.map((room) => room.id === id
+        ? { ...room, remainingSeconds: room.timerMode === 'pomodoro' ? 25 * 60 : room.initialSeconds, isBurning: true, pomodoroPhase: room.timerMode === 'pomodoro' ? 'focus' : room.pomodoroPhase }
+        : room),
+    }))
+  },
+
+  deleteRoom: (roomId) => set((state) => {
+    const id = roomId ?? state.activeRoomId
+    const rooms = state.rooms.filter((room) => room.id !== id)
+    return { rooms, activeRoomId: state.activeRoomId === id ? rooms[0]?.id ?? null : state.activeRoomId }
+  }),
+
+  sendReply: (content, replyTo) => {
+    const id = get().activeRoomId
+    const trimmed = content.trim()
+    if (!id || !trimmed) return
+    set((state) => ({
+      rooms: state.rooms.map((room) => room.id !== id ? room : {
+        ...room, lastActivityAt: Date.now(),
+        messages: [...room.messages, {
+          id: uid('msg'), author: state.profile.displayName, content: trimmed,
+          timestamp: Date.now(), avatarColor: state.profile.avatarColor, replyTo,
+        }],
+      }),
+    }))
+  },
+
+  toggleReaction: (messageId, emoji) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({
+      rooms: state.rooms.map((room) => room.id !== id ? room : {
+        ...room,
+        messages: room.messages.map((message) => {
+          if (message.id !== messageId) return message
+          const reactions = message.reactions ?? []
+          const current = reactions.find((reaction) => reaction.emoji === emoji)
+          const updated = current
+            ? current.reacted
+              ? reactions.filter((reaction) => reaction.emoji !== emoji || reaction.count > 1).map((reaction) => reaction.emoji === emoji ? { ...reaction, count: reaction.count - 1, reacted: false } : reaction)
+              : reactions.map((reaction) => reaction.emoji === emoji ? { ...reaction, count: reaction.count + 1, reacted: true } : reaction)
+            : [...reactions, { emoji, count: 1, reacted: true }]
+          return { ...message, reactions: updated }
+        }),
+      }),
+    }))
+  },
+
+  toggleMessagePin: (messageId) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({
+      rooms: state.rooms.map((room) => room.id !== id ? room : {
+        ...room, messages: room.messages.map((message) => message.id === messageId ? { ...message, pinned: !message.pinned } : message),
+      }),
+    }))
+  },
+
+  deleteMessage: (messageId) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({
+      rooms: state.rooms.map((room) => room.id !== id ? room : {
+        ...room, messages: room.messages.filter((message) => message.id !== messageId || message.author !== state.profile.displayName),
+      }),
+    }))
+  },
+
+  clearMessages: () => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({ rooms: state.rooms.map((room) => room.id === id ? { ...room, messages: [] } : room) }))
+  },
+
+  addParticipant: (name) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({
+      rooms: state.rooms.map((room) => room.id !== id || room.participants.some((participant) => participant.name === name) ? room : {
+        ...room, participants: [...room.participants, { id: uid('participant'), name, isSpeaking: false, isMuted: false, avatarColor: AVATAR_COLORS[room.participants.length % AVATAR_COLORS.length] }],
+      }),
+    }))
+  },
+
+  setActiveFile: (fileId) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({
+      rooms: state.rooms.map((room) => {
+        if (room.id !== id || !room.workspaceFiles.some((file) => file.id === fileId)) return room
+        const file = room.workspaceFiles.find((item) => item.id === fileId)
+        const extension = file?.name.split('.').pop()?.toLowerCase()
+        const codeLanguage: CodeLanguage = extension === 'js' || extension === 'ts' ? 'javascript' : extension === 'cpp' ? 'cpp' : 'python'
+        return {
+          ...room,
+          activeFileId: fileId,
+          openFileIds: room.openFileIds.includes(fileId) ? room.openFileIds : [...room.openFileIds, fileId],
+          code: file?.content ?? '',
+          codeLanguage,
+        }
+      }),
+    }))
+  },
+
+  closeWorkspaceFile: (fileId) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({
+      rooms: state.rooms.map((room) => {
+        if (room.id !== id) return room
+        const openFileIds = room.openFileIds.filter((openId) => openId !== fileId)
+        const activeFileId = room.activeFileId === fileId
+          ? (openFileIds.at(-1) ?? room.workspaceFiles.find((file) => file.id !== fileId)?.id ?? '')
+          : room.activeFileId
+        const nextFile = room.workspaceFiles.find((file) => file.id === activeFileId)
+        return { ...room, openFileIds, activeFileId, code: nextFile?.content ?? '' }
+      }),
+    }))
+  },
+
+  addWorkspaceFile: (name) => {
+    const id = get().activeRoomId
+    const trimmed = name.trim()
+    if (!id || !trimmed || !/^[\w.-]+\.(py|js|ts|cpp|html|css|json|md)$/.test(trimmed)) return
+    const fileId = uid('file')
+    set((state) => ({
+      rooms: state.rooms.map((room) => room.id !== id ? room : {
+        ...room,
+        workspaceFiles: [...room.workspaceFiles, { id: fileId, name: trimmed, content: '' }],
+        openFileIds: [...room.openFileIds, fileId],
+        activeFileId: fileId,
+        code: '',
+      }),
+    }))
+  },
+
+  deleteWorkspaceFile: (fileId) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({
+      rooms: state.rooms.map((room) => {
+        if (room.id !== id) return room
+        const workspaceFiles = room.workspaceFiles.filter((file) => file.id !== fileId)
+        const openFileIds = room.openFileIds.filter((openId) => openId !== fileId)
+        const activeFileId = room.activeFileId === fileId ? (openFileIds.at(-1) ?? workspaceFiles[0]?.id ?? '') : room.activeFileId
+        const activeFile = workspaceFiles.find((file) => file.id === activeFileId)
+        return { ...room, workspaceFiles, openFileIds, activeFileId, code: activeFile?.content ?? '' }
+      }),
+    }))
+  },
+
+  updateWorkspaceFile: (fileId, content) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({
+      rooms: state.rooms.map((room) => room.id !== id ? room : {
+        ...room,
+        code: room.activeFileId === fileId ? content : room.code,
+        workspaceFiles: room.workspaceFiles.map((file) => file.id === fileId ? { ...file, content } : file),
+      }),
+    }))
+  },
+
+  saveSnapshot: (message) => {
+    const id = get().activeRoomId
+    const trimmed = message.trim()
+    if (!id || !trimmed) return
+    set((state) => ({
+      rooms: state.rooms.map((room) => room.id !== id ? room : {
+        ...room,
+        snapshots: [{ id: uid('snapshot'), message: trimmed, createdAt: Date.now(), files: room.workspaceFiles.map((file) => ({ ...file })) }, ...room.snapshots],
+      }),
+    }))
+  },
+
+  restoreSnapshot: (snapshotId) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({
+      rooms: state.rooms.map((room) => {
+        if (room.id !== id) return room
+        const snapshot = room.snapshots.find((item) => item.id === snapshotId)
+        if (!snapshot) return room
+        const workspaceFiles = snapshot.files.map((file) => ({ ...file }))
+        const activeFileId = workspaceFiles.some((file) => file.id === room.activeFileId) ? room.activeFileId : workspaceFiles[0]?.id ?? ''
+        return { ...room, workspaceFiles, openFileIds: workspaceFiles.map((file) => file.id), activeFileId, code: workspaceFiles.find((file) => file.id === activeFileId)?.content ?? '' }
+      }),
+    }))
+  },
+
+  setSolverQuestion: (question) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({ rooms: state.rooms.map((room) => room.id === id ? { ...room, solverQuestion: question } : room) }))
+  },
+
+  saveSolverLesson: (lesson: SolverLesson) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({ rooms: state.rooms.map((room) => room.id === id ? { ...room, solverLesson: lesson } : room) }))
+  },
+
+  setStudyContent: (cards: { question: string; answer: string }[], quiz: QuizQuestion[]) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({ rooms: state.rooms.map((room) => room.id === id ? { ...room, studyCards: cards, quizQuestions: quiz } : room) }))
+  },
+
+  setWhiteboardMarks: (marks: WhiteboardMark[]) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({ rooms: state.rooms.map((room) => room.id === id ? { ...room, whiteboardMarks: marks } : room) }))
+  },
+
+  updateCode: (code) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({
+      rooms: state.rooms.map((room) =>
+        room.id === id ? {
+          ...room, code,
+          workspaceFiles: room.workspaceFiles.map((file) => file.id === room.activeFileId ? { ...file, content: code } : file),
+        } : room,
+      ),
+    }))
+  },
+
+  setCodeLanguage: (codeLanguage: CodeLanguage) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({
+      rooms: state.rooms.map((room) =>
+        room.id === id ? { ...room, codeLanguage } : room,
+      ),
+    }))
+  },
+
+  updateScratchpad: (scratchpad) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({
+      rooms: state.rooms.map((room) =>
+        room.id === id ? { ...room, scratchpad } : room,
+      ),
+    }))
+  },
+
+  addPinnedLink: (url) => {
+    const id = get().activeRoomId
+    if (!id) return
+    const parsed = new URL(url)
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      throw new Error('Only http and https links can be pinned.')
+    }
+    const link = {
+      id: uid('link'),
+      url: parsed.href,
+      title: parsed.hostname,
+    }
+    set((state) => ({
+      rooms: state.rooms.map((room) =>
+        room.id === id
+          ? { ...room, pinnedLinks: [...room.pinnedLinks, link] }
+          : room,
+      ),
+    }))
+  },
+
+  removePinnedLink: (linkId) => {
+    const id = get().activeRoomId
+    if (!id) return
+    set((state) => ({
+      rooms: state.rooms.map((room) =>
+        room.id === id
+          ? {
+              ...room,
+              pinnedLinks: room.pinnedLinks.filter((link) => link.id !== linkId),
+            }
+          : room,
+      ),
+    }))
+  },
+
   createRoom: (input: CreateCampfireInput) => {
+    const profile = get().profile
     const seconds = Math.max(1, input.durationMinutes) * 60
     const room: CampfireRoom = {
       id: uid('room'),
@@ -247,16 +689,33 @@ export const useCampfireStore = create<CampfireStore>((set, get) => ({
       initialSeconds: seconds,
       isBurning: true,
       activeSupplyTab: 'dev-rig',
+      code: '',
+      codeLanguage: 'python',
+      scratchpad: '',
+      pinnedLinks: [],
       createdAt: Date.now(),
       lastActivityAt: Date.now(),
+      category: 'General Grind' as RoomCategory,
+      slowmode: false,
+      workspaceFiles: initialWorkspace('', 'python'),
+      openFileIds: ['file-main'],
+      activeFileId: 'file-main',
+      snapshots: [],
+      whiteboardMarks: [],
+      solverQuestion: '',
+      solverLesson: null,
+      studyCards: [],
+      quizQuestions: [],
       pomodoroPhase: input.timerMode === 'pomodoro' ? 'focus' : undefined,
       participants: [
         {
           id: 'you',
-          name: 'You',
+          name: profile.displayName,
           isSpeaking: false,
           isMuted: false,
-          avatarColor: AVATAR_COLORS[2],
+          avatarColor: profile.avatarColor,
+          status: profile.status,
+          customStatus: profile.customStatus,
         },
       ],
       messages: [
@@ -306,10 +765,10 @@ export const useCampfireStore = create<CampfireStore>((set, get) => ({
             ...room.messages,
             {
               id: uid('msg'),
-              author: 'You',
+            author: state.profile.displayName,
               content: trimmed,
               timestamp: Date.now(),
-              avatarColor: AVATAR_COLORS[2],
+            avatarColor: state.profile.avatarColor,
             },
           ],
         }
@@ -387,8 +846,4 @@ export function formatTimer(totalSeconds: number): string {
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
   }
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
-}
-
-export function selectActiveRoom(state: CampfireStore): CampfireRoom | null {
-  return state.rooms.find((r) => r.id === state.activeRoomId) ?? null
 }

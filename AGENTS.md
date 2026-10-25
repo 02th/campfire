@@ -1,27 +1,54 @@
-# CAMPFIRE — CURSOR AGENT RULES & ARCHITECTURE
+# Campfire — Architecture and Agent Guidance
 
-## 1. Project Overview
+## Product
 
-Campfire is a desktop/web social workspace where micro-community rooms ("Campfires") self-destruct on custom timers `countdown`, `deadman`, `pomodoro`) and feature an embedded multi-tab "Supply Dock" (VS Code Monaco editor with Piston API code execution, GitHub repo loader, Collaborative Whiteboard/Study Canvas, Synced Pomodoro + Web Audio Brown Noise, and WebRTC Voice/Screen Share).
+Campfire is a local-first social workspace for small, timed collaboration rooms.
+Rooms support countdown, deadman (chat activity adds five minutes), and
+Pomodoro timers. The interface uses an obsidian liquid-glass palette and a
+fixed three-column layout.
 
-## 2. Strict Tech Stack & Conventions
+## Stack and source of truth
 
-- **Framework:** React 18 + TypeScript + Vite + Tailwind CSS + Lucide React icons.
+- React 19, TypeScript, Vite, Tailwind CSS 4, Lucide React, and Zustand 5.
+- `src/store/useCampfireStore.ts` owns rooms, active-room selection, messages,
+  timer ticks, fuel, editor content, scratchpad notes, and pinned links.
+- `src/types/campfire.ts` defines the room, timer, message, participant, supply,
+  and editor types.
+- Keep Zustand selectors referentially stable: select state primitives,
+  functions, or existing arrays directly. Derive rooms with `.find()` and
+  filtered values inside the component, never inside a selector.
+- `startCampfireTicker()` starts the shared one-second timer engine.
 
-- **State Management:** Use a centralized `zustand` store `src/store/useCampfireStore.ts`) so the Radar, Top Timer Header, Center Supply Dock, Voice Bar, and Chat Sidebar stay 100% synced.
+## Layout and components
 
-- **UI Palette:** Premium Black & White Liquid Glass — deep obsidian backgrounds `#000000` / `#080808`), frosted glass panels (`bg-white/[0.03]` or `bg-black/[0.4]` + `backdrop-blur-xl` + `border-white/10` + inner highlights), crisp monochrome typography (`text-white` / `text-neutral-400`), glowing white accents (replacing ember orange), glass hover states (`hover:bg-white/[0.07]`, `hover:border-white/25`). Utility classes: `.glass-panel`, `.glass-card`, `.glass-btn`, `.glass-btn-primary`, `.ember-glow`, `.timer-glow`.
+- `src/App.tsx` defines the fixed 260px Radar rail, flexible center stage, and
+  fixed 310px Chat rail. The center contains a 52px header, flexible Supply
+  Dock, and 58px voice dock.
+- `src/components/layout/RadarSidebar.tsx` switches rooms and opens the
+  creation modal. `TopBurnHeader.tsx` shows the room, participants, clock, and
+  15-minute Stoke action.
+- `src/components/supplies/SupplyDock.tsx` provides the Monaco Dev Rig, shared
+  room scratchpad, pinned links, Piston execution, and terminal output.
+- `src/components/layout/BottomVoiceDock.tsx` contains local voice controls,
+  browser screen capture, and a Web Audio brown-noise generator.
+- `src/components/layout/RightChatSidebar.tsx` renders room messages and sends
+  chat input. `src/components/modals/CreateCampfireModal.tsx` creates rooms.
+- Do not reintroduce the removed layout customizer, floating panel toolbars, or
+  overlays. The fixed shell is intentional.
 
-- **No Dead Buttons:** Every button MUST work immediately in local state (even before Supabase keys are added). Use realistic default rooms and local fallbacks so the app is 100% playable out of the box.
+## UX and behavior
 
-## 3. Folder Structure to Maintain
+- Keep the app usable without Supabase credentials. State and collaboration
+  features currently operate locally in the browser.
+- Keep timer and clock text tabular; keep buttons and interactive cards on the
+  200ms liquid-glass spring transition.
+- Code execution sends editor content to the Piston API only when the user
+  presses Run. If the API is unavailable, the terminal reports the failure and
+  uses the intentionally limited literal-print and arithmetic offline evaluator.
+- Keep user-visible errors explicit; do not add dead buttons or silent
+  success-shaped fallbacks.
 
-- `src/types/campfire.ts` -> All TypeScript interfaces for Rooms, Timers, Supplies, Messages.
+## Verification
 
-- `src/store/useCampfireStore.ts` -> Global Zustand state, live countdown tick logic, "+ Add Fuel" (+30m) action, and room creation.
-
-- `src/components/layout/` -> `RadarSidebar.tsx`, `TopBurnHeader.tsx`, `BottomVoiceDock.tsx`, `RightChatSidebar.tsx`.
-
-- `src/components/supplies/` -> `SupplyDock.tsx`, `DevRigTab.tsx` (Monaco + Piston API + GitHub), `StudyBoardTab.tsx` (Canvas + Pomodoro + Brown Noise), `ScreenShareTab.tsx` (WebRTC `getDisplayMedia`).
-
-- `src/components/modals/` -> `CreateCampfireModal.tsx`, `EmberRecapModal.tsx` (shown when timer hits 00:00:00).
+- `npm run build` runs the TypeScript project build and production Vite build.
+- `npm run lint` runs Oxlint.

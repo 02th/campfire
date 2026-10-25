@@ -1,65 +1,49 @@
 import { useEffect } from 'react'
-import { LayoutShell } from './components/layout/LayoutShell'
+import { RadarSidebar } from './components/layout/RadarSidebar'
+import { TopBurnHeader } from './components/layout/TopBurnHeader'
+import { BottomVoiceDock } from './components/layout/BottomVoiceDock'
+import { RightChatSidebar } from './components/layout/RightChatSidebar'
+import { SupplyDock } from './components/supplies/SupplyDock'
 import { CreateCampfireModal } from './components/modals/CreateCampfireModal'
-import { startCampfireTicker } from './store/useCampfireStore'
-import { useLayoutStore } from './store/useLayoutStore'
-import { Eye, LayoutDashboard, RotateCcw } from 'lucide-react'
-
-/** Escape hatch when the header panel is hidden — still reach layout controls. */
-function LayoutEscapeHatch() {
-  const customizeMode = useLayoutStore((s) => s.customizeMode)
-  const header = useLayoutStore((s) => s.panels.header)
-  const toggleCustomizeMode = useLayoutStore((s) => s.toggleCustomizeMode)
-  const resetLayout = useLayoutStore((s) => s.resetLayout)
-  const restorePanel = useLayoutStore((s) => s.restorePanel)
-
-  if (header && !header.hidden) return null
-
-  return (
-    <div className="fixed right-4 top-4 z-50 flex items-center gap-1.5 rounded-xl border border-white/20 bg-black/80 p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl">
-      {header?.hidden && (
-        <button
-          type="button"
-          title="Restore Top Header"
-          onClick={() => restorePanel('header')}
-          className="rounded-lg p-2 text-neutral-300 transition-all hover:bg-white/[0.08] hover:text-white"
-        >
-          <Eye className="h-4 w-4" />
-        </button>
-      )}
-      <button
-        type="button"
-        title="Reset to Default"
-        onClick={resetLayout}
-        className="rounded-lg p-2 text-neutral-300 transition-all hover:bg-white/[0.08] hover:text-white"
-      >
-        <RotateCcw className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
-        title={customizeMode ? 'Done customizing' : 'Customize Layout'}
-        onClick={toggleCustomizeMode}
-        className={
-          customizeMode
-            ? 'rounded-lg bg-white/15 p-2 text-white'
-            : 'rounded-lg p-2 text-neutral-300 transition-all hover:bg-white/[0.08] hover:text-white'
-        }
-      >
-        <LayoutDashboard className="h-4 w-4" />
-      </button>
-    </div>
-  )
-}
+import { startCampfireTicker, useCampfireStore } from './store/useCampfireStore'
 
 export default function App() {
+  const profile = useCampfireStore((state) => state.profile)
   useEffect(() => {
     startCampfireTicker()
   }, [])
 
   return (
     <>
-      <LayoutShell />
-      <LayoutEscapeHatch />
+      <div className={`h-screen w-screen overflow-hidden flex bg-[#070709] text-[#F4F4F6] select-none ${profile.reducedMotion ? 'reduce-motion' : ''} ${profile.highContrastBorders ? 'high-contrast' : ''}`}>
+        {/* Left Rail: Radar Sidebar */}
+        <aside className="w-[260px] shrink-0 h-full flex flex-col bg-[#0B0B0E]/90 backdrop-blur-2xl border-r border-white/[0.07]">
+          <RadarSidebar />
+        </aside>
+
+        {/* Center Stage */}
+        <div className="flex-1 min-w-0 h-full flex flex-col bg-[#070709] relative">
+          {/* Top Burn Header */}
+          <header className="h-[52px] shrink-0 px-5 flex items-center justify-between border-b border-white/[0.07] bg-[#0B0B0E]/75 backdrop-blur-xl z-10">
+            <TopBurnHeader />
+          </header>
+
+          {/* Supply Dock */}
+          <main className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <SupplyDock />
+          </main>
+
+          {/* Bottom Voice Dock */}
+          <footer className="h-[58px] shrink-0 px-4 flex items-center justify-between border-t border-white/[0.07] bg-[#0B0B0E]/90 backdrop-blur-2xl z-10">
+            <BottomVoiceDock />
+          </footer>
+        </div>
+
+        {/* Right Rail: Chat Sidebar */}
+        <aside className="w-[310px] shrink-0 h-full flex flex-col bg-[#0B0B0E]/90 backdrop-blur-2xl border-l border-white/[0.07]">
+          <RightChatSidebar />
+        </aside>
+      </div>
       <CreateCampfireModal />
     </>
   )
