@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "autosync": "node scripts/autosync.mjs",
+    "autosync:install": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-autosync.ps1",
+    "autosync:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/uninstall-autosync.ps1",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview"
