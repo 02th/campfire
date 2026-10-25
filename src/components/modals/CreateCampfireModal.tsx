@@ -34,7 +34,7 @@ export function CreateCampfireModal() {
   const [topic, setTopic] = useState('')
   const [timerMode, setTimerMode] = useState<TimerMode>('countdown')
   const [durationMinutes, setDurationMinutes] = useState(60)
-  const [template, setTemplate] = useState('Dev Sprint')
+  const [template, setTemplate] = useState('')
 
   useEffect(() => {
     if (!open) return
@@ -52,13 +52,14 @@ export function CreateCampfireModal() {
     setTopic('')
     setTimerMode('countdown')
     setDurationMinutes(60)
-    setTemplate('Dev Sprint')
+    setTemplate('')
   }
 
   const handleCreate = () => {
+    if (!name.trim()) return
     createRoom({
-      name: name || 'Untitled Campfire',
-      topic: topic || 'No topic set',
+      name: name.trim(),
+      topic: topic.trim(),
       timerMode,
       durationMinutes,
     })
@@ -119,7 +120,7 @@ export function CreateCampfireModal() {
           <div className="space-y-2">
             <span className="text-xs font-medium uppercase tracking-wider text-neutral-500">Preset template</span>
             <div className="grid grid-cols-3 gap-2">
-              {(['Dev Sprint', 'Exam Cram', 'Whiteboard Jam'] as const).map((item) => <button key={item} type="button" onClick={() => { setTemplate(item); if (item === 'Exam Cram') { setName('Exam Cram'); setTopic('Focused exam revision and worked problems') } else if (item === 'Whiteboard Jam') { setName('Whiteboard Jam'); setTopic('Draw and explain ideas together') } else { setName('Dev Sprint'); setTopic('Build, test, and share code') } }} className={cn('rounded-lg border px-2 py-2 text-[10px]', template === item ? 'border-white/25 bg-white/10 text-white' : 'border-white/10 text-neutral-400 hover:bg-white/[0.05]')}>{item === 'Dev Sprint' ? '💻' : item === 'Exam Cram' ? '🧬' : '🎨'} {item}</button>)}
+              {(['Dev Sprint', 'Exam Cram', 'Whiteboard Jam'] as const).map((item) => <button key={item} type="button" onClick={() => { setTemplate(item); if (item === 'Exam Cram') { setName('Exam Cram'); setTopic('Focused exam revision and worked problems') } else if (item === 'Whiteboard Jam') { setName('Whiteboard Jam'); setTopic('Draw and explain ideas together') } else { setName('Dev Sprint'); setTopic('Build, test, and share code') } }} className={cn('rounded-lg border px-2 py-2 text-[10px]', template === item ? 'border-white/25 bg-white/10 text-white' : 'border-white/10 text-neutral-400 hover:bg-white/[0.05]')}>{item}</button>)}
             </div>
           </div>
 
@@ -210,12 +211,13 @@ export function CreateCampfireModal() {
           <button
             type="button"
             onClick={closeCreateModal}
-            className="rounded-xl px-4 py-2 text-sm text-neutral-400 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu active:scale-[0.97] hover:bg-white/[0.05] hover:text-white"
+            className="rounded-xl px-4 py-2 text-sm text-neutral-400 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu active:scale-[0.97] hover:bg-white/[0.05] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             Cancel
           </button>
           <button
             type="button"
+            disabled={!name.trim()}
             onClick={handleCreate}
             className="glass-btn-primary rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu active:scale-[0.97]"
           >
