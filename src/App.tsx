@@ -8,26 +8,45 @@ import { SupplyDock } from './components/supplies/SupplyDock'
 import { CreateCampfireModal } from './components/modals/CreateCampfireModal'
 import { startCampfireTicker, useCampfireStore } from './store/useCampfireStore'
 
+type LiquidGlassLens = {
+  destroy?: () => void
+}
+
 export default function App() {
   const profile = useCampfireStore((state) => state.profile)
   useEffect(() => {
     startCampfireTicker()
 
-    // liquid-gl needs fixed/sticky targets; these shell surfaces are sticky
-    // and the library automatically falls back to CSS when GPU APIs are unavailable.
-    const glass = liquidGL({
-      target: '.liquid-glass',
-      engine: 'auto',
-      refraction: 0.018,
-      bevelDepth: 0.08,
-      bevelWidth: 0.12,
-      frost: 1,
-      shadow: true,
-      specular: true,
-      tint: 'rgba(12, 12, 18, 0.22)',
-    })
+    // liquid-gl returns one lens for a single target, but an array for multiple targets.
+    // Clean up every lens so React StrictMode's development remount cannot leave duplicates.
+    let lenses: LiquidGlassLens[] = []
+    try {
+      const glass = liquidGL({
+        target: '.liquid-glass',
+        engine: 'auto',
+        refraction: 0.018,
+        bevelDepth: 0.08,
+        bevelWidth: 0.12,
+        frost: 1,
+        shadow: true,
+        specular: true,
+        tint: 'rgba(12, 12, 18, 0.22)',
+      })
 
-    return () => glass?.destroy?.()
+      lenses = glass
+        ? Array.isArray(glass)
+          ? (glass as unknown as LiquidGlassLens[])
+          : [glass as unknown as LiquidGlassLens]
+        : []
+    } catch (error) {
+      // The CSS glass styling remains usable if the GPU renderer cannot initialize.
+      console.error('liquid-gl initialization failed; keeping CSS glass fallback.', error)
+    }
+
+    return () => {
+      lenses.forEach((lens) => lens.destroy?.())
+      lenses = []
+    }
   }, [])
 
   return (
