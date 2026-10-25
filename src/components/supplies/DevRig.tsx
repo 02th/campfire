@@ -31,7 +31,7 @@ export function DevRig() {
   const room = rooms.find((item) => item.id === activeRoomId) ?? null
   const [drawerTab, setDrawerTab] = useState<DrawerTab>('terminal')
   const [drawerOpen, setDrawerOpen] = useState(true)
-  const [terminal, setTerminal] = useState('Ready. Type help for commands.')
+  const [terminal, setTerminal] = useState('Run Code to see output here.')
   const [command, setCommand] = useState('')
   const [snapshotMessage, setSnapshotMessage] = useState('')
   const [audit, setAudit] = useState<string[]>([])
@@ -107,7 +107,7 @@ export function DevRig() {
   const runAudit = () => {
     const lines = activeFile.content.split('\n')
     const findings = [
-      `Complexity hint: ${/for\s+.+\s+in|for\s*\(/.test(activeFile.content) ? 'at least O(n) from iteration; inspect nested loops for O(n²).' : 'no obvious loop; likely O(1) or input-dependent library work.'}`,
+      \`Loop scan: \${/for\\s+.+\\s+in|for\\s*\\(/.test(activeFile.content) ? 'loop syntax detected; inspect nesting and input size before estimating complexity.' : 'no common loop syntax detected; this is not a complexity proof.'},
       ...(activeFile.content.includes('TODO') ? [`TODO marker at line ${lines.findIndex((line) => line.includes('TODO')) + 1}.`] : []),
       ...(activeFile.content.includes('while') && !activeFile.content.includes('break') ? ['Review loop termination; no explicit break was found.'] : []),
       ...(lines.length < 3 ? ['Very short file: add edge-case coverage and input validation.'] : ['Check empty input, boundary values, and duplicate values in tests.']),
@@ -120,9 +120,8 @@ export function DevRig() {
     event.preventDefault()
     const value = command.trim()
     if (!value) return
-    if (value === 'help') setTerminal('Commands: help · clear · python main.py · git status')
+    if (value === 'help') setTerminal('Commands: help · clear · python main.py · node main.js')
     else if (value === 'clear') setTerminal('')
-    else if (value === 'git status') setTerminal(`On local room workspace\n${room.workspaceFiles.length} tracked files · ${room.snapshots.length} snapshots`)
     else if (/^(python|python3|node)\s+/.test(value)) void run()
     else setTerminal(`Unknown command: ${value}. Type help for supported commands.`)
     setCommand('')
@@ -135,7 +134,7 @@ export function DevRig() {
     setSnapshotMessage('')
   }
   const promptNewFile = () => {
-    const name = window.prompt('New file name (e.g. notes.py)')
+    const name = window.prompt('New file name with extension')
     if (!name) return
     if (!/^[\w.-]+\.(py|js|ts|cpp|html|css|json|md)$/.test(name.trim())) {
       setFileError('Use a valid filename ending in .py, .js, .ts, .cpp, .html, .css, .json, or .md.')
@@ -155,10 +154,12 @@ export function DevRig() {
     setDrawerTab('terminal')
     setDrawerOpen(true)
   }
-  const html = room.workspaceFiles.find((file) => file.name.endsWith('.html'))?.content ?? '<!doctype html><html><head></head><body style="background:#111;color:white;font-family:sans-serif"><h2>Campfire preview</h2><p>Add an index.html to preview.</p></body></html>'
+  const html = room.workspaceFiles.find((file) => file.name.endsWith('.html'))?.content ?? ''
   const css = room.workspaceFiles.find((file) => file.name.endsWith('.css'))?.content ?? ''
   const js = activeFile.name.endsWith('.js') ? activeFile.content : room.workspaceFiles.find((file) => file.name.endsWith('.js'))?.content ?? ''
-  const previewHtml = html.replace('</head>', `<style>${css}</style></head>`).replace('</body>', `<script>${js.replace(/<\/script/gi, '<\\/script')}</script></body>`)
+  const previewHtml = html
+    ? html.replace('</head>', \`<style>\${css}</style></head>\`).replace('</body>', \`<script>\${js.replace(/<\\/script/gi, '<\\\\/script')}</script></body>\`)
+    : ''
 
   return <section className="flex min-h-0 flex-1 flex-col overflow-hidden" aria-label="Code editor">
     <div className="flex min-h-0 flex-1">
@@ -189,7 +190,7 @@ export function DevRig() {
         <div className="flex h-10 shrink-0 items-center justify-between border-b border-white/[0.07] px-2">
           <span className="truncate font-mono text-[10px] text-neutral-500">{activeFile.name}</span>
           <div className="flex gap-1">
-            <button onClick={format} className="rounded px-2 py-1 text-[10px] text-neutral-300 hover:bg-white/10">⚡ Format</button>
+            <button onClick={format} className="rounded px-2 py-1 text-[10px] text-neutral-300 hover:bg-white/10">Clean whitespace</button>
             <button onClick={() => sendMessage(`Shared ${activeFile.name}:\n\`\`\`\n${activeFile.content}\n\`\`\``)} className="rounded px-2 py-1 text-[10px] text-neutral-300 hover:bg-white/10">Post to Chat</button>
             <button onClick={() => void run()} disabled={running} className="rounded bg-white px-2 py-1 text-[10px] font-semibold text-black disabled:opacity-50">▶ {running ? 'Running…' : 'Run Code'}</button>
           </div>
@@ -201,13 +202,16 @@ export function DevRig() {
     </div>
     {drawerOpen && <div className="h-[175px] shrink-0 border-t border-white/[0.08] bg-[#050507]">
       <div className="flex h-9 items-center justify-between border-b border-white/[0.07] px-2">
-        <div className="flex gap-1">{([['terminal', 'Terminal Output'], ['problems', 'Problems / AI Code Review'], ['snapshots', 'Git Snapshots'], ['preview', 'Live HTML/JS Preview']] as [DrawerTab, string][]).map(([id, label]) => <button key={id} onClick={() => setDrawerTab(id)} className={`rounded px-2 py-1 text-[10px] ${drawerTab === id ? 'bg-white/10 text-white' : 'text-neutral-500'}`}>{label}</button>)}</div>
+        <div className="flex gap-1">{([['terminal', 'Terminal Output'], ['problems', 'Code Checks'], ['snapshots', 'Workspace Snapshots'], ['preview', 'Live HTML/JS Preview']] as [DrawerTab, string][]).map(([id, label]) => <button key={id} onClick={() => setDrawerTab(id)} className={`rounded px-2 py-1 text-[10px] ${drawerTab === id ? 'bg-white/10 text-white' : 'text-neutral-500'}`}>{label}</button>)}</div>
         <button onClick={() => setDrawerOpen(false)} aria-label="Close workbench" className="text-neutral-500">×</button>
       </div>
-      {drawerTab === 'terminal' && <div className="flex h-[136px] flex-col p-2"><div className="flex items-center gap-2 text-[10px]"><span className={exitCode === 0 ? 'text-emerald-400' : exitCode === 1 ? 'text-red-400' : 'text-neutral-500'}>{exitCode === null ? 'READY' : `EXIT ${exitCode}`}</span>{runningTime !== null && <span className="font-mono text-neutral-500">{runningTime.toFixed(1)} ms</span>}</div><pre className="scrollbar-thin flex-1 overflow-auto whitespace-pre-wrap font-mono text-[10px] text-neutral-300">{terminal}</pre><form onSubmit={runCommand} className="flex gap-2"><span className="text-emerald-400">&gt;</span><input value={command} onChange={(event) => setCommand(event.target.value)} placeholder="help · clear · python main.py · git status" className="min-w-0 flex-1 bg-transparent font-mono text-[10px] text-white outline-none" /></form></div>}
-      {drawerTab === 'problems' && <div className="scrollbar-thin h-[136px] overflow-y-auto p-2"><button onClick={runAudit} className="mb-2 rounded bg-white/10 px-2 py-1 text-[10px] text-white">🔍 Run AI Code Audit</button>{audit.map((item, index) => <button key={item} onClick={() => { const line = item.match(/line (\d+)/)?.[1]; if (line) document.querySelector('.monaco-editor textarea')?.scrollIntoView() }} className="block w-full border-t border-white/[0.06] py-1.5 text-left text-[10px] text-amber-200">⚠ {index + 1}. {item}</button>)}</div>}
-      {drawerTab === 'snapshots' && <div className="flex h-[136px] gap-3 p-2"><form onSubmit={saveCommit} className="flex w-64 shrink-0 gap-1"><input value={snapshotMessage} onChange={(event) => setSnapshotMessage(event.target.value)} placeholder="Commit message" className="glass-input min-w-0 flex-1 rounded px-2 text-[10px] text-white" /><button className="rounded bg-white px-2 text-[10px] text-black">Commit Snapshot</button></form><div className="scrollbar-thin flex-1 space-y-1 overflow-y-auto">{room.snapshots.map((snapshot) => <div key={snapshot.id} className="flex items-center justify-between rounded border border-white/[0.07] px-2 py-1 text-[10px] text-neutral-300"><span>{snapshot.message} · {new Date(snapshot.createdAt).toLocaleTimeString()}</span><div className="flex gap-2"><button onClick={() => showDiff(snapshot.id)} className="text-neutral-300">Diff</button><button onClick={() => restoreSnapshot(snapshot.id)} className="text-sky-300">Restore</button></div></div>)}</div></div>}
-      {drawerTab === 'preview' && <iframe title="Live HTML preview" sandbox="allow-scripts" srcDoc={previewHtml} className="h-[136px] w-full bg-white" />}
+      {drawerTab === 'terminal' && <div className="flex h-[136px] flex-col p-2"><div className="flex items-center gap-2 text-[10px]"><span className={exitCode === 0 ? 'text-emerald-400' : exitCode === 1 ? 'text-red-400' : 'text-neutral-500'}>{exitCode === null ? 'READY' : `EXIT ${exitCode}`}</span>{runningTime !== null && <span className="font-mono text-neutral-500">{runningTime.toFixed(1)} ms</span>}</div><pre className="scrollbar-thin flex-1 overflow-auto whitespace-pre-wrap font-mono text-[10px] text-neutral-300">{terminal}</pre><form onSubmit={runCommand} className="flex gap-2"><span className="text-emerald-400">&gt;</span><input value={command} onChange={(event) => setCommand(event.target.value)} placeholder="help · clear · python main.py · node main.js" className="min-w-0 flex-1 bg-transparent font-mono text-[10px] text-white outline-none" /></form></div>}
+      {drawerTab === 'problems' && <div className="scrollbar-thin h-[136px] overflow-y-auto p-2"><button onClick={runAudit} className="mb-2 rounded bg-white/10 px-2 py-1 text-[10px] text-white">Run quick checks</button>{audit.map((item, index) => <button key={item} onClick={() => { const line = item.match(/line (\d+)/)?.[1]; if (line) document.querySelector('.monaco-editor textarea')?.scrollIntoView() }} className="block w-full border-t border-white/[0.06] py-1.5 text-left text-[10px] text-amber-200">⚠ {index + 1}. {item}</button>)}</div>}
+      {drawerTab === 'snapshots' && <div className="flex h-[136px] gap-3 p-2"><form onSubmit={saveCommit} className="flex w-64 shrink-0 gap-1"><input value={snapshotMessage} onChange={(event) => setSnapshotMessage(event.target.value)} placeholder="Snapshot note" className="glass-input min-w-0 flex-1 rounded px-2 text-[10px] text-white" /><button className="rounded bg-white px-2 text-[10px] text-black">Save Snapshot</button></form><div className="scrollbar-thin flex-1 space-y-1 overflow-y-auto">{room.snapshots.map((snapshot) => <div key={snapshot.id} className="flex items-center justify-between rounded border border-white/[0.07] px-2 py-1 text-[10px] text-neutral-300"><span>{snapshot.message} · {new Date(snapshot.createdAt).toLocaleTimeString()}</span><div className="flex gap-2"><button onClick={() => showDiff(snapshot.id)} className="text-neutral-300">Diff</button><button onClick={() => restoreSnapshot(snapshot.id)} className="text-sky-300">Restore</button></div></div>)}</div></div>}
+      {drawerTab === 'preview' && (html
+        ? <iframe title="Live HTML preview" sandbox="allow-scripts" srcDoc={previewHtml} className="h-[136px] w-full bg-white" />
+        : <div className="flex h-[136px] items-center justify-center px-4 text-center text-[11px] text-neutral-500">Add an HTML file to this workspace to preview it here.</div>
+      )}
     </div>}
     {!drawerOpen && <button onClick={() => setDrawerOpen(true)} className="h-7 border-t border-white/10 text-[10px] text-neutral-400">Open Workbench</button>}
   </section>
