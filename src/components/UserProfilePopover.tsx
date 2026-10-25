@@ -37,7 +37,7 @@ export function UserProfilePopover({ name, color, onClose }: { name: string; col
           <button onClick={() => setMuted((value) => !value)} className="w-full rounded-md border border-white/10 px-3 py-2 text-left text-xs text-neutral-300 hover:bg-white/[0.06]">{muted ? 'Unmute User' : 'Mute User'}</button>
         </div>}
         <button onClick={() => { sendMessage(`@${name} `); onClose() }} className="mb-4 w-full rounded-md bg-white px-3 py-2 text-xs font-semibold text-black hover:bg-neutral-200">@Mention in Chat</button>
-        {isSelf && <button onClick={() => updateProfile({ muted: !profile.muted })} className="mb-4 ml-2 rounded-md border border-white/10 px-3 py-2 text-xs text-neutral-300">{profile.muted ? 'Unmute' : 'Mute'} microphone</button>}
+        {isSelf && <button onClick={() => window.dispatchEvent(new Event('campfire:toggle-microphone'))} className="mb-4 ml-2 rounded-md border border-white/10 px-3 py-2 text-xs text-neutral-300">{profile.muted ? 'Unmute' : 'Mute'} microphone</button>}
       </div>
     </div>
   )
