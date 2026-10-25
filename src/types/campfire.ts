@@ -16,7 +16,6 @@ export interface CampfireProfile {
   avatarColor: string
   status: UserStatus
   muted: boolean
-  deafened: boolean
   brownNoise: boolean
   screenSharing: boolean
   screenStream: MediaStream | null
@@ -90,7 +89,7 @@ export interface SolverLesson {
   formula: string
   steps: { title: string; content: string; why: string }[]
   finalAnswer: string
-  source: 'local model' | 'offline guide'
+  source: 'local model'
 }
 
 export interface WhiteboardMark {
@@ -178,7 +177,6 @@ export interface CampfireStore {
   toggleMessagePin: (messageId: string) => void
   deleteMessage: (messageId: string) => void
   clearMessages: () => void
-  addParticipant: (name: string) => void
   setActiveFile: (fileId: string) => void
   closeWorkspaceFile: (fileId: string) => void
   addWorkspaceFile: (name: string) => void
