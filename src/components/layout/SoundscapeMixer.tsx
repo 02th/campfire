@@ -132,7 +132,7 @@ export function SoundscapeMixer({ open, onClose }: { open: boolean; onClose: () 
   }, [])
 
   const setVolume = (track: Track, value: number) => {
-    updateProfile({ [track]: value, ...(track === 'noiseVolume' ? { brownNoise: value > 0 } : {}) })
+    updateProfile({ [track]: value })
     if (value > 0) void startTrack(track).catch((error: unknown) => setAudioError(error instanceof Error ? error.message : 'Audio track could not start.'))
     else {
       cleanupsRef.current[track]?.()
