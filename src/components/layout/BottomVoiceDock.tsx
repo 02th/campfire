@@ -92,7 +92,7 @@ export function BottomVoiceDock() {
   }
 
   return (
-    <div className="flex h-full w-full items-center gap-0">
+    <div className="liquidGL liquid-glass-dock flex h-full w-full items-center gap-0">
       <div className="flex min-w-0 flex-1 basis-0 items-center justify-between gap-3 border-r border-white/[0.1] pr-4">
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="relative flex h-2.5 w-2.5 shrink-0">
