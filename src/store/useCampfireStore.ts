@@ -46,7 +46,7 @@ export const useCampfireStore = create<CampfireStore>((set, get) => ({
   profile: {
     displayName: 'You', username: 'you', pronouns: '', bio: '',
     customStatus: '', avatarInitials: 'YO', avatarColor: AVATAR_COLORS[2],
-    status: 'online', muted: true, deafened: false, brownNoise: false,
+    status: 'online', muted: true, brownNoise: false,
     screenSharing: false, screenStream: null, aiBaseUrl: '', aiModel: '',
     rainVolume: 0, crackleVolume: 0, binauralVolume: 0, inputVolume: 80, outputVolume: 80,
     inputDeviceId: '', outputDeviceId: '', noiseVolume: 0,
@@ -204,16 +204,6 @@ export const useCampfireStore = create<CampfireStore>((set, get) => ({
     const id = get().activeRoomId
     if (!id) return
     set((state) => ({ rooms: state.rooms.map((room) => room.id === id ? { ...room, messages: [] } : room) }))
-  },
-
-  addParticipant: (name) => {
-    const id = get().activeRoomId
-    if (!id) return
-    set((state) => ({
-      rooms: state.rooms.map((room) => room.id !== id || room.participants.some((participant) => participant.name === name) ? room : {
-        ...room, participants: [...room.participants, { id: uid('participant'), name, isSpeaking: false, isMuted: false, avatarColor: AVATAR_COLORS[room.participants.length % AVATAR_COLORS.length] }],
-      }),
-    }))
   },
 
   setActiveFile: (fileId) => {
@@ -420,8 +410,8 @@ export const useCampfireStore = create<CampfireStore>((set, get) => ({
     const seconds = Math.max(1, input.durationMinutes) * 60
     const room: CampfireRoom = {
       id: uid('room'),
-      name: input.name.trim() || 'Untitled Campfire',
-      topic: input.topic.trim() || 'No topic set',
+      name: input.name.trim(),
+      topic: input.topic.trim(),
       timerMode: input.timerMode,
       remainingSeconds: seconds,
       initialSeconds: seconds,
