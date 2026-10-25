@@ -295,3 +295,23 @@ time,
   border: none;
   border-radius: 7px;
 }
+
+
+/* liquid-gl WebGPU/WebGL lens enhancement. Keep the existing CSS glass as fallback. */
+.liquid-glass {
+  position: sticky;
+  isolation: isolate;
+  background-color: rgba(12, 12, 18, 0.18);
+  -webkit-backdrop-filter: blur(var(--cf-blur));
+  backdrop-filter: blur(var(--cf-blur));
+}
+
+/* Preserve legibility above the refractive layer created by liquid-gl. */
+.liquid-glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass { scroll-behavior: auto; }
+}

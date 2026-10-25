@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import liquidGL from 'liquid-gl'
 import { RadarSidebar } from './components/layout/RadarSidebar'
 import { TopBurnHeader } from './components/layout/TopBurnHeader'
 import { BottomVoiceDock } from './components/layout/BottomVoiceDock'
@@ -11,20 +12,36 @@ export default function App() {
   const profile = useCampfireStore((state) => state.profile)
   useEffect(() => {
     startCampfireTicker()
+
+    // liquid-gl needs fixed/sticky targets; these shell surfaces are sticky
+    // and the library automatically falls back to CSS when GPU APIs are unavailable.
+    const glass = liquidGL({
+      target: '.liquid-glass',
+      engine: 'auto',
+      refraction: 0.018,
+      bevelDepth: 0.08,
+      bevelWidth: 0.12,
+      frost: 1,
+      shadow: true,
+      specular: true,
+      tint: 'rgba(12, 12, 18, 0.22)',
+    })
+
+    return () => glass?.destroy?.()
   }, [])
 
   return (
     <>
       <div className={`h-screen w-screen overflow-hidden flex bg-[#070709] text-[#F4F4F6] select-none ${profile.reducedMotion ? 'reduce-motion' : ''} ${profile.highContrastBorders ? 'high-contrast' : ''}`}>
         {/* Left Rail: Radar Sidebar */}
-        <aside className="w-[260px] shrink-0 h-full flex flex-col bg-[#0B0B0E]/90 backdrop-blur-2xl border-r border-white/[0.07]">
+        <aside className="liquid-glass sticky top-0 w-[260px] shrink-0 h-full flex flex-col bg-[#0B0B0E]/90 backdrop-blur-2xl border-r border-white/[0.07]">
           <RadarSidebar />
         </aside>
 
         {/* Center Stage */}
         <div className="flex-1 min-w-0 h-full flex flex-col bg-[#070709] relative">
           {/* Top Burn Header */}
-          <header className="h-[52px] shrink-0 px-5 flex items-center justify-between border-b border-white/[0.07] bg-[#0B0B0E]/75 backdrop-blur-xl z-10">
+          <header className="liquid-glass sticky top-0 h-[52px] shrink-0 px-5 flex items-center justify-between border-b border-white/[0.07] bg-[#0B0B0E]/75 backdrop-blur-xl z-10">
             <TopBurnHeader />
           </header>
 
@@ -34,13 +51,13 @@ export default function App() {
           </main>
 
           {/* Bottom Voice Dock */}
-          <footer className="h-[58px] shrink-0 px-4 flex items-center justify-between border-t border-white/[0.07] bg-[#0B0B0E]/90 backdrop-blur-2xl z-10">
+          <footer className="liquid-glass sticky bottom-0 h-[58px] shrink-0 px-4 flex items-center justify-between border-t border-white/[0.07] bg-[#0B0B0E]/90 backdrop-blur-2xl z-10">
             <BottomVoiceDock />
           </footer>
         </div>
 
         {/* Right Rail: Chat Sidebar */}
-        <aside className="w-[310px] shrink-0 h-full flex flex-col bg-[#0B0B0E]/90 backdrop-blur-2xl border-l border-white/[0.07]">
+        <aside className="liquid-glass sticky top-0 w-[310px] shrink-0 h-full flex flex-col bg-[#0B0B0E]/90 backdrop-blur-2xl border-l border-white/[0.07]">
           <RightChatSidebar />
         </aside>
       </div>
