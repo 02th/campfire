@@ -296,7 +296,7 @@ time,
   border-radius: 7px;
 }
 
-/* Keep the existing CSS glass available when GPU rendering is not available. */
+/* CSS glass fallback — the WebGL canvas supplies refraction when available. */
 .liquid-glass {
   position: relative;
   isolation: isolate;
@@ -308,10 +308,4 @@ time,
 .liquid-glass > * {
   position: relative;
   z-index: 1;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .liquid-glass {
-    scroll-behavior: auto;
-  }
 }
