@@ -440,7 +440,7 @@ export const useCampfireStore = create<CampfireStore>((set, get) => ({
           id: 'you',
           name: profile.displayName,
           isSpeaking: false,
-          isMuted: false,
+          isMuted: profile.muted,
           avatarColor: profile.avatarColor,
           status: profile.status,
           customStatus: profile.customStatus,
