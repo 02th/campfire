@@ -52,7 +52,7 @@ export function Solvely({ onWhiteboard }: { onWhiteboard: () => void }) {
         body: JSON.stringify({
           model: profile.aiModel || 'auto',
           messages: [
-            { role: 'system', content: 'Answer as JSON with concept, formula, steps (array of title/content/why), and finalAnswer. Do not invent problem values.' },
+            { role: 'system', content: 'You are a careful tutor for ' + subject + '. Answer as JSON with concept, formula, steps (array of title/content/why), and finalAnswer. Do not invent problem values.' },
             { role: 'user', content: image
               ? [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: image } }]
               : prompt },
@@ -117,7 +117,7 @@ export function Solvely({ onWhiteboard }: { onWhiteboard: () => void }) {
 
   if (!room) return <div className="p-6 text-sm text-neutral-500">Select a room to study.</div>
   return <section className="scrollbar-thin flex min-h-0 flex-1 flex-col overflow-y-auto p-5">
-    <div className="mb-4 flex items-center justify-between"><div><h2 className="text-lg font-semibold text-white">Solver</h2><p className="text-xs text-neutral-500">Use your configured model endpoint for worked explanations.</p></div><div className="flex gap-1"><button onClick={() => setMode('solve')} className={`rounded px-3 py-1.5 text-xs ${mode === 'solve' ? 'bg-white/10 text-white' : 'text-neutral-500'}`}>Solve</button><button onClick={() => setMode('study')} className={`rounded px-3 py-1.5 text-xs ${mode === 'study' ? 'bg-white/10 text-white' : 'text-neutral-500'}`}>Study Suite</button></div></div>
+    <div className="mb-4 flex items-center justify-between"><div><h2 className="text-lg font-semibold text-white">Solver</h2><p className="text-xs text-neutral-500">Use your configured model endpoint for worked explanations.</p></div><div className="flex gap-1"><button onClick={() => setMode('solve')} className={`rounded px-3 py-1.5 text-xs ${mode === 'solve' ? 'bg-white/10 text-white' : 'text-neutral-500'}`}>Solve</button><button onClick={() => setMode('study')} className={`rounded px-3 py-1.5 text-xs ${mode === 'study' ? 'bg-white/10 text-white' : 'text-neutral-500'}`}>Study cards</button></div></div>
     {mode === 'solve' ? <>
       <div className="mb-3 flex flex-wrap gap-2">{SUBJECTS.map((item) => <button key={item} onClick={() => setSubject(item)} className={`rounded-full border px-3 py-1.5 text-[10px] ${item === subject ? 'border-white/25 bg-white/10 text-white' : 'border-white/10 text-neutral-400'}`}>{item}</button>)}</div>
       <div onDragOver={(event) => event.preventDefault()} onDrop={onDrop} onPaste={(event) => { const item = Array.from(event.clipboardData.items).find((clipboardItem) => clipboardItem.type.startsWith('image/')); if (item) loadImage(item.getAsFile() ?? undefined) }} className="mb-3 flex min-h-20 items-center justify-between rounded-xl border border-dashed border-white/15 bg-white/[0.02] p-3">
