@@ -211,7 +211,7 @@ export function CreateCampfireModal() {
           <button
             type="button"
             onClick={closeCreateModal}
-            className="rounded-xl px-4 py-2 text-sm text-neutral-400 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu active:scale-[0.97] hover:bg-white/[0.05] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-xl px-4 py-2 text-sm text-neutral-400 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu active:scale-[0.97] hover:bg-white/[0.05] hover:text-white"
           >
             Cancel
           </button>
@@ -219,7 +219,7 @@ export function CreateCampfireModal() {
             type="button"
             disabled={!name.trim()}
             onClick={handleCreate}
-            className="glass-btn-primary rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu active:scale-[0.97]"
+            className="glass-btn-primary rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
           >
             Ignite
           </button>
