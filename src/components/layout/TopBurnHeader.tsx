@@ -123,14 +123,14 @@ export function TopBurnHeader() {
             <span className="sm:hidden">+15m</span>
           </button>
           <button type="button" aria-label="Export session report" title="Export Session" onClick={exportSession} className="rounded-lg border border-white/10 p-2 text-neutral-400 hover:bg-white/[0.08] hover:text-white"><Download className="h-4 w-4" /></button>
-          <button type="button" aria-label="Connect to Code2Gether" title="Connect to Code2Gether" onClick={() => setModal('connect')} className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs text-neutral-300 hover:bg-white/[0.08] hover:text-white"><UserPlus className="h-4 w-4" /><span>Connect to Code2Gether</span></button>
           <button type="button" aria-label="Room settings" title="Room Settings" onClick={() => setModal('settings')} className="rounded-lg border border-white/10 p-2 text-neutral-400 hover:bg-white/[0.08] hover:text-white"><Settings className="h-4 w-4" /></button>
         </div>
       )}
-      {modal && room && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-md" onClick={() => setModal(null)}>
+      <button type="button" aria-label="Connect to Code2Gether" title="Connect to Code2Gether" onClick={() => setModal('connect')} className="ml-2 flex shrink-0 items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs text-neutral-300 hover:bg-white/[0.08] hover:text-white"><UserPlus className="h-4 w-4" /><span className="hidden sm:inline">Connect to Code2Gether</span></button>
+      {modal && (room || modal === 'connect') && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-md" onClick={() => setModal(null)}>
         <section role="dialog" aria-modal="true" aria-label={modal === 'settings' ? 'Room settings' : 'Code2Gether'} onClick={(event) => event.stopPropagation()} className="glass-panel-dense w-full max-w-lg rounded-2xl p-5">
           <header className="mb-5 flex items-center justify-between"><h2 className="text-lg font-semibold text-white">{modal === 'settings' ? 'Room Settings' : 'Connect to Code2Gether'}</h2><button onClick={() => setModal(null)} aria-label="Close"><X className="h-4 w-4 text-neutral-400" /></button></header>
-          {modal === 'settings' ? <div className="space-y-4">
+          {modal === 'settings' && room ? <div className="space-y-4">
             <label className="block space-y-1 text-xs text-neutral-400">Room Name<input value={room.name} onChange={(event) => updateRoom({ name: event.target.value })} className="glass-input w-full rounded-lg px-3 py-2 text-sm text-white outline-none" /></label>
             <label className="block space-y-1 text-xs text-neutral-400">Topic / Goal<input value={room.topic} onChange={(event) => updateRoom({ topic: event.target.value })} className="glass-input w-full rounded-lg px-3 py-2 text-sm text-white outline-none" /></label>
             <label className="block space-y-1 text-xs text-neutral-400">Timer Mode<select value={room.timerMode} onChange={(event) => updateRoom({ timerMode: event.target.value as TimerMode })} className="glass-input w-full rounded-lg p-2 text-sm text-white"><option value="countdown">COUNTDOWN</option><option value="pomodoro">POMODORO</option><option value="deadman">DEADMAN</option></select></label>
