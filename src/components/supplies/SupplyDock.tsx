@@ -24,9 +24,9 @@ import { Whiteboard } from './Whiteboard'
 
 const TABS: { id: SupplyTab; label: string; icon: typeof Code2 }[] = [
   { id: 'dev-rig', label: 'Dev Rig', icon: Code2 },
-  { id: 'solvely', label: 'Solvely AI', icon: Brain },
-  { id: 'whiteboard', label: 'AI Whiteboard', icon: Palette },
-  { id: 'scratchpad', label: 'Shared Scratchpad', icon: FileText },
+  { id: 'solvely', label: 'Solver', icon: Brain },
+  { id: 'whiteboard', label: 'Whiteboard', icon: Palette },
+  { id: 'scratchpad', label: 'Scratchpad', icon: FileText },
   { id: 'pinned-links', label: 'Pinned Links', icon: Link2 },
   { id: 'live-stage', label: 'Live Stage', icon: MonitorUp },
 ]
@@ -274,7 +274,6 @@ export function SupplyDock() {
   const removePinnedLink = useCampfireStore((state) => state.removePinnedLink)
   const sendMessage = useCampfireStore((state) => state.sendMessage)
   const profile = useCampfireStore((state) => state.profile)
-  const updateProfile = useCampfireStore((state) => state.updateProfile)
   const room = rooms.find((item) => item.id === activeRoomId) ?? null
   const [isRunning, setIsRunning] = useState(false)
   const [terminalOpen, setTerminalOpen] = useState(false)
@@ -631,26 +630,32 @@ export function SupplyDock() {
 
         {room.activeSupplyTab === 'live-stage' && (
           <section className="flex min-h-0 flex-1 flex-col p-5" role="tabpanel">
-            <div className="mb-4 flex items-center justify-between">
-              <div><h2 className="text-sm font-semibold text-white">Live Workspace Stream</h2><p className="mt-1 text-xs text-neutral-500">Share your screen or preview the room stage.</p></div>
-              <button onClick={() => updateProfile({ simulatedStream: !profile.simulatedStream })} className={cn('rounded-lg px-3 py-2 text-xs font-semibold', profile.simulatedStream ? 'bg-emerald-500 text-black' : 'glass-btn text-white')}>{profile.simulatedStream ? 'Stop simulated stream' : 'Start simulated stream'}</button>
+            <div className="mb-4">
+              <h2 className="text-sm font-semibold text-white">Live Stage</h2>
+              <p className="mt-1 text-xs text-neutral-500">
+                Share a real screen from the audio dock. This local preview does not broadcast to other members.
+              </p>
             </div>
-            <p className="mb-3 rounded-lg border border-white/10 bg-white/[0.03] p-3 text-xs text-neutral-400">{profile.screenSharing ? 'Browser capture is live. Stop it from the voice dock.' : profile.simulatedStream ? 'Simulated stream is live.' : 'The simulated participant stage remains available. Use the voice dock to capture a real display.'}</p>
-            <div className="grid min-h-0 flex-1 gap-3 md:grid-cols-2">
-              <div className="flex flex-col overflow-hidden rounded-xl border border-white/10 bg-black/40">
-                <div className="flex items-center gap-2 border-b border-white/10 px-3 py-2 text-[11px] text-neutral-400"><span className="h-2 w-2 rounded-full bg-emerald-400" />Shared workspace · {room.name}</div>
-                {profile.screenStream ? <video ref={screenVideoRef} autoPlay muted playsInline className="min-h-0 flex-1 bg-black object-contain" aria-label="Live shared screen" /> : <pre className="scrollbar-thin flex-1 overflow-auto p-4 font-mono text-xs leading-relaxed text-neutral-300">{room.code || '// Your shared code will appear here.'}</pre>}
+            {profile.screenStream ? (
+              <video
+                ref={screenVideoRef}
+                autoPlay
+                muted
+                playsInline
+                className="min-h-0 flex-1 rounded-xl border border-white/10 bg-black object-contain"
+                aria-label="Your shared screen preview"
+              />
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-xl border border-white/10 bg-black/20 px-6 text-center">
+                <MonitorUp className="mb-3 h-7 w-7 text-neutral-500" />
+                <h3 className="text-sm font-medium text-neutral-200">Screen sharing is off</h3>
+                <p className="mt-2 max-w-sm text-xs leading-relaxed text-neutral-500">
+                  Use Share Screen in the bottom audio controls to choose a display or window.
+                </p>
               </div>
-              <div className="grid content-start gap-3 sm:grid-cols-2">
-                {room.participants.map((participant) => <div key={participant.id} className={cn('rounded-xl border border-white/10 bg-white/[0.03] p-4', participant.isSpeaking && 'ring-2 ring-emerald-500/60')}>
-                  <div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold" style={{ backgroundColor: participant.avatarColor }}>{participant.name.slice(0, 2).toUpperCase()}</span><span className="text-sm text-white">{participant.name}</span></div>
-                  <p className="mt-3 text-[10px] uppercase tracking-wider text-neutral-500">{participant.isSpeaking ? 'Speaking' : 'In the stage'}</p>
-                </div>)}
-              </div>
-            </div>
+            )}
           </section>
-        )}
-
+        )
         {room.activeSupplyTab === 'dev-rig' && room.workspaceFiles.length > 0 && <DevRig />}
         {room.activeSupplyTab === 'solvely' && <Solvely onWhiteboard={() => {
           const currentRoom = useCampfireStore.getState().rooms.find((item) => item.id === room.id)
