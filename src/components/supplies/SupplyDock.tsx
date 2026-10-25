@@ -326,7 +326,7 @@ export function SupplyDock() {
   if (!room) {
     return (
       <div className="flex flex-1 items-center justify-center text-sm text-neutral-500">
-        Select a campfire to open supplies.
+        Create a campfire to start a workspace.
       </div>
     )
   }
