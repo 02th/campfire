@@ -27,289 +27,27 @@ function uid(prefix = 'id'): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}`
 }
 
-function formatSeedMessage(
-  author: string,
-  content: string,
-  minutesAgo: number,
-  color: string,
-) {
-  return {
-    id: uid('msg'),
-    author,
-    content,
-    timestamp: Date.now() - minutesAgo * 60_000,
-    avatarColor: color,
-  }
-}
-
 function initialWorkspace(code: string, language: CodeLanguage): WorkspaceFile[] {
   const mainName = language === 'python' ? 'main.py' : `main.${language === 'javascript' ? 'js' : language === 'cpp' ? 'cpp' : 'ts'}`
-  return [
-    { id: 'file-main', name: mainName, content: code },
-    { id: 'file-tests', name: 'test_suite.py', content: '# Add focused tests here\n' },
-    { id: 'file-algorithm', name: 'algorithm.ts', content: '// Shared algorithm notes\n' },
-    { id: 'file-index', name: 'index.html', content: '<!doctype html>\\n<html><body><h1>Campfire preview</h1></body></html>' },
-    { id: 'file-readme', name: 'README.md', content: '# Shared project\\n\\nRoom notes and project setup.' },
-  ]
+  return [{ id: 'file-main', name: mainName, content: code }]
 }
 
 function buildDefaultRooms(): CampfireRoom[] {
-  const now = Date.now()
-
-  return [
-    {
-      id: 'room_python_dsa',
-      name: 'Late Night Python & DSA',
-      topic: 'Grind LeetCode mediums · share solutions in Dev Rig',
-      timerMode: 'countdown',
-      remainingSeconds: 2 * 3600 + 47 * 60 + 18,
-      initialSeconds: 3 * 3600,
-      isBurning: true,
-      activeSupplyTab: 'dev-rig',
-      code: `# Late Night Python & DSA
-def max_sliding_window(nums: list[int], k: int) -> list[int]:
-    """O(n) deque approach — drop your variant below."""
-    from collections import deque
-    dq, out = deque(), []
-    for i, n in enumerate(nums):
-        while dq and dq[0] <= i - k:
-            dq.popleft()
-        while dq and nums[dq[-1]] < n:
-            dq.pop()
-        dq.append(i)
-        if i >= k - 1:
-            out.append(nums[dq[0]])
-    return out
-
-print(max_sliding_window([1,3,-1,-3,5,3,6,7], 3))`,
-      codeLanguage: 'python',
-      scratchpad: '',
-      pinnedLinks: [],
-      createdAt: now - 40 * 60_000,
-      lastActivityAt: now,
-      category: 'DSA & Coding',
-      slowmode: false,
-      workspaceFiles: initialWorkspace(
-        `# Late Night Python & DSA
-def max_sliding_window(nums: list[int], k: int) -> list[int]:
-    """O(n) deque approach — drop your variant below."""
-    from collections import deque
-    dq, out = deque(), []
-    for i, n in enumerate(nums):
-        while dq and dq[0] <= i - k:
-            dq.popleft()
-        while dq and nums[dq[-1]] < n:
-            dq.pop()
-        dq.append(i)
-        if i >= k - 1:
-            out.append(nums[dq[0]])
-    return out
-
-print(max_sliding_window([1,3,-1,-3,5,3,6,7], 3))`,
-        'python',
-      ),
-      openFileIds: ['file-main'],
-      activeFileId: 'file-main',
-      snapshots: [],
-      whiteboardMarks: [],
-      solverQuestion: '',
-      solverLesson: null,
-      studyCards: [],
-      quizQuestions: [],
-      participants: [
-        {
-          id: 'p1',
-          name: 'Nova',
-          isSpeaking: true,
-          isMuted: false,
-          avatarColor: AVATAR_COLORS[0],
-        },
-        {
-          id: 'p2',
-          name: 'Kai',
-          isSpeaking: false,
-          isMuted: false,
-          avatarColor: AVATAR_COLORS[3],
-        },
-        {
-          id: 'p3',
-          name: 'Rhea',
-          isSpeaking: false,
-          isMuted: true,
-          avatarColor: AVATAR_COLORS[5],
-        },
-        {
-          id: 'you',
-          name: 'You',
-          isSpeaking: false,
-          isMuted: false,
-          avatarColor: AVATAR_COLORS[2],
-        },
-      ],
-      messages: [
-        formatSeedMessage(
-          'Nova',
-          'Stuck on the sliding window variant — anyone free?',
-          12,
-          AVATAR_COLORS[0],
-        ),
-        formatSeedMessage(
-          'Kai',
-          'Drop it in Dev Rig. I just finished #424.',
-          9,
-          AVATAR_COLORS[3],
-        ),
-        formatSeedMessage(
-          'Rhea',
-          'Brown noise on, headphones in. Locking in 🔥',
-          4,
-          AVATAR_COLORS[5],
-        ),
-      ],
-    },
-    {
-      id: 'room_ochem',
-      name: 'Organic Chem Cram',
-      topic: 'SN1/SN2 mechanisms · Study Board open',
-      timerMode: 'pomodoro',
-      remainingSeconds: 18 * 60 + 42,
-      initialSeconds: 25 * 60,
-      isBurning: true,
-      pomodoroPhase: 'focus',
-      activeSupplyTab: 'scratchpad',
-      code: 'console.log("Organic chemistry study group")',
-      codeLanguage: 'javascript',
-      scratchpad: 'SN1: two-step, carbocation intermediate.\nSN2: one-step, backside attack.',
-      pinnedLinks: [],
-      createdAt: now - 25 * 60_000,
-      lastActivityAt: now,
-      category: 'Chem & Bio',
-      slowmode: false,
-      workspaceFiles: initialWorkspace('console.log("Organic chemistry study group")', 'javascript'),
-      openFileIds: ['file-main'],
-      activeFileId: 'file-main',
-      snapshots: [],
-      whiteboardMarks: [],
-      solverQuestion: '',
-      solverLesson: null,
-      studyCards: [],
-      quizQuestions: [],
-      participants: [
-        {
-          id: 'p4',
-          name: 'Mira',
-          isSpeaking: false,
-          isMuted: false,
-          avatarColor: AVATAR_COLORS[4],
-        },
-        {
-          id: 'p5',
-          name: 'Jules',
-          isSpeaking: true,
-          isMuted: false,
-          avatarColor: AVATAR_COLORS[1],
-        },
-        {
-          id: 'you',
-          name: 'You',
-          isSpeaking: false,
-          isMuted: false,
-          avatarColor: AVATAR_COLORS[2],
-        },
-      ],
-      messages: [
-        formatSeedMessage(
-          'Mira',
-          'Carbocation rearrangements are evil tonight.',
-          8,
-          AVATAR_COLORS[4],
-        ),
-        formatSeedMessage(
-          'Jules',
-          'Sketching the energy diagram on the board — peek?',
-          3,
-          AVATAR_COLORS[1],
-        ),
-      ],
-    },
-    {
-      id: 'room_lofi',
-      name: 'Lo-Fi Beat Lab',
-      topic: 'Sample flips · screen share your DAW',
-      timerMode: 'deadman',
-      remainingSeconds: 55 * 60 + 7,
-      initialSeconds: 60 * 60,
-      isBurning: true,
-      activeSupplyTab: 'pinned-links',
-      code: 'console.log("Welcome to the beat lab")',
-      codeLanguage: 'javascript',
-      scratchpad: '',
-      pinnedLinks: [],
-      createdAt: now - 15 * 60_000,
-      lastActivityAt: now,
-      category: 'Music & Beats',
-      slowmode: false,
-      workspaceFiles: initialWorkspace('console.log("Welcome to the beat lab")', 'javascript'),
-      openFileIds: ['file-main'],
-      activeFileId: 'file-main',
-      snapshots: [],
-      whiteboardMarks: [],
-      solverQuestion: '',
-      solverLesson: null,
-      studyCards: [],
-      quizQuestions: [],
-      participants: [
-        {
-          id: 'p6',
-          name: 'Echo',
-          isSpeaking: false,
-          isMuted: false,
-          avatarColor: AVATAR_COLORS[6],
-        },
-        {
-          id: 'p7',
-          name: 'Ash',
-          isSpeaking: false,
-          isMuted: true,
-          avatarColor: AVATAR_COLORS[0],
-        },
-        {
-          id: 'you',
-          name: 'You',
-          isSpeaking: false,
-          isMuted: false,
-          avatarColor: AVATAR_COLORS[2],
-        },
-      ],
-      messages: [
-        formatSeedMessage(
-          'Echo',
-          'Deadman timer — keep chatting or we burn out.',
-          6,
-          AVATAR_COLORS[6],
-        ),
-        formatSeedMessage(
-          'Ash',
-          'Sharing Ableton now. Feedback welcome on the hats.',
-          2,
-          AVATAR_COLORS[0],
-        ),
-      ],
-    },
-  ]
+  // Start clean: no fictional rooms, members, code samples, or seeded chat.
+  return []
 }
 
 const FUEL_SECONDS = 15 * 60
 
 export const useCampfireStore = create<CampfireStore>((set, get) => ({
   rooms: buildDefaultRooms(),
-  activeRoomId: 'room_python_dsa',
+  activeRoomId: null,
   isCreateModalOpen: false,
   profile: {
     displayName: 'You', username: 'you', pronouns: '', bio: '',
     customStatus: '', avatarInitials: 'YO', avatarColor: AVATAR_COLORS[2],
-    status: 'online', muted: false, deafened: false, brownNoise: false,
-    screenSharing: false, screenStream: null, simulatedStream: false, aiBaseUrl: 'http://127.0.0.1:31415/v1/chat/completions', aiModel: 'auto',
+    status: 'online', muted: true, deafened: false, brownNoise: false,
+    screenSharing: false, screenStream: null, aiBaseUrl: '', aiModel: '',
     rainVolume: 0, crackleVolume: 0, binauralVolume: 0, inputVolume: 80, outputVolume: 80,
     inputDeviceId: '', outputDeviceId: '', noiseVolume: 0,
     noiseTone: 'Balanced Rain', echoCancellation: true, noiseSuppression: true,
@@ -718,15 +456,7 @@ export const useCampfireStore = create<CampfireStore>((set, get) => ({
           customStatus: profile.customStatus,
         },
       ],
-      messages: [
-        {
-          id: uid('msg'),
-          author: 'System',
-          content: `Campfire lit · ${input.timerMode} · ${input.durationMinutes}m fuel`,
-          timestamp: Date.now(),
-          avatarColor: '#FF8A00',
-        },
-      ],
+      messages: [],
     }
 
     set((state) => ({
