@@ -93,12 +93,12 @@ export function RightChatSidebar() {
       <div className="flex h-[52px] shrink-0 items-center justify-between border-b border-white/[0.07] px-3">
         <div className="flex min-w-0 items-center gap-1">
           {([
-            ['chat', `💬 Chat`],
-            ['members', `👥 Members (${room?.participants.length ?? 0})`],
-            ['pins', `📌 Pins (${pinnedMessages.length})`],
+            ['chat', 'Chat'],
+            ['members', `Members (${room?.participants.length ?? 0})`],
+            ['pins', `Pins (${pinnedMessages.length})`],
           ] as const).map(([id, label]) => <button key={id} onClick={() => setTab(id)} className={`rounded-md px-2 py-1.5 text-[10px] font-medium ${tab === id ? 'bg-white/10 text-white' : 'text-neutral-500 hover:text-neutral-200'}`}>{label}</button>)}
         </div>
-        {tab === 'chat' && <span className="hidden items-center gap-1 text-[10px] text-neutral-500 sm:flex"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#22C55E]" />{room?.participants.length ?? 0}</span>}
+        {room && tab === 'chat' && <span className="text-[10px] text-neutral-600">Local chat</span>}
       </div>
 
       {tab === 'chat' && <>
@@ -129,9 +129,23 @@ export function RightChatSidebar() {
         </form>
       </>}
       {tab === 'members' && <div className="scrollbar-thin flex-1 overflow-y-auto p-3">
-        <p className="mb-2 px-1 text-[10px] font-bold tracking-wider text-neutral-500">👑 FLAME KEEPER (HOST) — 1</p>
-        {room?.participants.slice(0, 1).map((person) => <Member key={person.id} name={person.name} color={person.avatarColor} status={person.status} activity="Hosting this campfire" role="Host" onSelect={() => setProfileCard({ name: person.name, color: person.avatarColor })} />)}
-        {room && <Roster roomId={room.id} participants={room.participants} onSelect={(person) => setProfileCard({ name: person.name, color: person.avatarColor })} />}
+        {!room ? (
+          <p className="py-8 text-center text-xs text-neutral-500">Open a campfire to view its members.</p>
+        ) : room.participants.filter((person) => person.id !== 'you').length === 0 ? (
+          <p className="py-8 text-center text-xs leading-relaxed text-neutral-500">
+            You’re the only member here. Other members will appear when online collaboration is available.
+          </p>
+        ) : (
+          <div className="space-y-1">
+            <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Members in this campfire</p>
+            {room.participants.filter((person) => person.id !== 'you').map((person) => (
+              <button key={person.id} onClick={() => setProfileCard({ name: person.name, color: person.avatarColor })} className="flex w-full items-center gap-2 rounded-lg px-1 py-2 text-left hover:bg-white/[0.04]">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full text-[9px] font-semibold text-white" style={{ backgroundColor: person.avatarColor }}>{person.name.slice(0, 2).toUpperCase()}</span>
+                <span className="text-xs text-neutral-200">{person.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>}
       {tab === 'pins' && <div className="scrollbar-thin flex-1 space-y-2 overflow-y-auto p-3">{pinnedMessages.length ? pinnedMessages.map((message) => <div key={message.id} className="rounded-lg border border-white/10 bg-white/[0.03] p-3"><p className="mb-1 text-[10px] font-semibold text-neutral-300">{message.author}</p><p className="whitespace-pre-wrap break-words text-xs text-neutral-400">{message.content}</p></div>) : <p className="py-8 text-center text-xs text-neutral-600"><Users className="mx-auto mb-2 h-4 w-4" />No pinned messages yet.</p>}</div>}
       {profileCard && <UserProfilePopover name={profileCard.name} color={profileCard.color} onClose={() => setProfileCard(null)} />}
@@ -139,18 +153,3 @@ export function RightChatSidebar() {
   )
 }
 
-function Member({ name, color, activity, role, status, onSelect }: { name: string; color: string; activity: string; role: string; status?: 'online' | 'idle' | 'dnd' | 'invisible'; onSelect: () => void }) {
-  const dot = status === 'idle' ? 'bg-[#F59E0B]' : status === 'dnd' ? 'bg-[#EF4444]' : status === 'invisible' ? 'bg-[#71717A]' : 'bg-[#22C55E]'
-  return <button onClick={onSelect} className="flex w-full items-center gap-2 rounded-lg px-1 py-2 text-left hover:bg-white/[0.04]"><span className="relative flex h-8 w-8 items-center justify-center rounded-full text-[9px] font-semibold text-white" style={{ backgroundColor: color }}>{name.slice(0, 2).toUpperCase()}<span className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[#0B0B0E] ${dot}`} /></span><span className="min-w-0 flex-1"><span className="block truncate text-xs text-neutral-200">{name} <span className="text-[9px] text-neutral-500">{role}</span></span><span className="block truncate text-[10px] text-neutral-500">{activity}</span></span></button>
-}
-
-function Roster({ roomId, participants, onSelect }: { roomId: string; participants: { id: string; name: string; avatarColor: string; status?: 'online' | 'idle' | 'dnd' | 'invisible'; isSpeaking: boolean; isMuted: boolean }[]; onSelect: (person: { name: string; avatarColor: string }) => void }) {
-  const others = participants.slice(1)
-  const online = others.filter((person) => !person.status || person.status === 'online' || person.status === 'dnd')
-  const idle = others.filter((person) => person.status === 'idle' || person.status === 'invisible')
-  const render = (list: typeof others) => list.map((person, index) => <Member key={`${roomId}-${person.id}`} name={person.name} color={person.avatarColor} status={person.status} activity={person.isMuted ? 'Voice · Muted' : person.isSpeaking ? 'In Voice · Speaking' : index % 2 ? 'Editing main.py' : 'In Voice · Brown Noise'} role={index % 2 ? 'Dev' : 'Scholar'} onSelect={() => onSelect(person)} />)
-  return <>
-    <p className="mb-2 mt-4 px-1 text-[10px] font-bold tracking-wider text-neutral-500">🟢 LOCKED IN — {online.length}</p>{render(online)}
-    <p className="mb-2 mt-4 px-1 text-[10px] font-bold tracking-wider text-neutral-500">🌙 IDLE / AFK — {idle.length}</p>{render(idle)}
-  </>
-}
