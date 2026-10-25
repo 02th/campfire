@@ -35,7 +35,6 @@ export function DevRig() {
   const [command, setCommand] = useState('')
   const [snapshotMessage, setSnapshotMessage] = useState('')
   const [audit, setAudit] = useState<string[]>([])
-  const [code2GetherNotice, setCode2GetherNotice] = useState(false)
   const [running, setRunning] = useState(false)
   const [runningTime, setRunningTime] = useState<number | null>(null)
   const [exitCode, setExitCode] = useState<number | null>(null)
@@ -107,7 +106,7 @@ export function DevRig() {
   const runAudit = () => {
     const lines = activeFile.content.split('\n')
     const findings = [
-      \`Loop scan: \${/for\\s+.+\\s+in|for\\s*\\(/.test(activeFile.content) ? 'loop syntax detected; inspect nesting and input size before estimating complexity.' : 'no common loop syntax detected; this is not a complexity proof.'},
+      `Loop scan: ${/for\s+.+\s+in|for\s*\(/.test(activeFile.content) ? 'loop syntax detected; inspect nesting and input size before estimating complexity.' : 'no common loop syntax detected; this is not a complexity proof.'}`,
       ...(activeFile.content.includes('TODO') ? [`TODO marker at line ${lines.findIndex((line) => line.includes('TODO')) + 1}.`] : []),
       ...(activeFile.content.includes('while') && !activeFile.content.includes('break') ? ['Review loop termination; no explicit break was found.'] : []),
       ...(lines.length < 3 ? ['Very short file: add edge-case coverage and input validation.'] : ['Check empty input, boundary values, and duplicate values in tests.']),
@@ -178,15 +177,8 @@ export function DevRig() {
         <div className="flex min-h-9 items-center justify-between border-b border-white/[0.07]">
           <div className="scrollbar-thin flex min-w-0 flex-1 overflow-x-auto">{openFiles.map((file) => <div key={file.id} className={`flex shrink-0 items-center gap-2 border-r border-white/[0.06] px-3 py-2 text-[11px] ${activeFile.id === file.id ? 'bg-white/[0.06] text-white' : 'text-neutral-500'}`}><button onClick={() => setActiveFile(file.id)} className="flex items-center gap-2"><span>{codeLanguage(file.name)}</span>{file.name}</button><button onClick={() => closeWorkspaceFile(file.id)} aria-label={`Close ${file.name}`} className="text-neutral-500 hover:text-white">×</button></div>)}</div>
           <div className="flex shrink-0 items-center gap-1 px-2">
-            <button type="button" onClick={() => setCode2GetherNotice(true)} className="rounded px-2 py-1 text-[10px] text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-white">Connect to Code2Gether</button>
           </div>
         </div>
-        {code2GetherNotice && (
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/[0.07] bg-white/[0.025] px-3 py-2 text-xs text-neutral-300" role="status">
-            <span>Campfire is currently being developed. Please stand by.</span>
-            <button type="button" onClick={() => setCode2GetherNotice(false)} className="text-neutral-500 hover:text-white" aria-label="Dismiss message">×</button>
-          </div>
-        )}
         <div className="flex h-10 shrink-0 items-center justify-between border-b border-white/[0.07] px-2">
           <span className="truncate font-mono text-[10px] text-neutral-500">{activeFile.name}</span>
           <div className="flex gap-1">
