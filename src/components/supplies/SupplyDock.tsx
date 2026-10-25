@@ -58,137 +58,6 @@ function exitCode(value: unknown): number {
   return typeof value === 'number' ? value : 1
 }
 
-function evaluateArithmetic(expression: string): number | null {
-  const tokens = expression.match(/\d+(?:\.\d+)?|\*\*|[()+\-*/%]/g)
-  if (
-    !tokens ||
-    tokens.join('') !== expression.replace(/\s+/g, '')
-  ) {
-    return null
-  }
-
-  let position = 0
-  let invalid = false
-  const parseExpression = (): number => {
-    let result = parseTerm()
-    while (tokens[position] === '+' || tokens[position] === '-') {
-      const operator = tokens[position]
-      position += 1
-      const right = parseTerm()
-      result = operator === '+' ? result + right : result - right
-    }
-    return result
-  }
-  const parseTerm = (): number => {
-    let result = parsePower()
-    while (
-      tokens[position] === '*' ||
-      tokens[position] === '/' ||
-      tokens[position] === '%'
-    ) {
-      const operator = tokens[position]
-      position += 1
-      const right = parsePower()
-      if (operator === '*') result *= right
-      if (operator === '/') result /= right
-      if (operator === '%') result %= right
-    }
-    return result
-  }
-  const parsePower = (): number => {
-    const left = parsePrimary()
-    if (tokens[position] !== '**') return left
-    position += 1
-    return left ** parsePower()
-  }
-  const parsePrimary = (): number => {
-    const token = tokens[position]
-    if (token === '+' || token === '-') {
-      position += 1
-      const value = parsePrimary()
-      return token === '-' ? -value : value
-    }
-    if (token === '(') {
-      position += 1
-      const value = parseExpression()
-      if (tokens[position] !== ')') invalid = true
-      else position += 1
-      return value
-    }
-    if (!token || !/^\d+(?:\.\d+)?$/.test(token)) {
-      invalid = true
-      position += 1
-      return 0
-    }
-    position += 1
-    return Number(token)
-  }
-
-  const result = parseExpression()
-  return invalid || position !== tokens.length || !Number.isFinite(result)
-    ? null
-    : result
-}
-
-function decodeLiteral(expression: string): string | null {
-  const value = expression.trim().replace(/;\s*$/, '')
-  if (/^"(?:[^"\\]|\\.)*"$/.test(value)) {
-    try {
-      return JSON.parse(value) as string
-    } catch {
-      return null
-    }
-  }
-  if (/^'(?:[^'\\]|\\.)*'$/.test(value)) {
-    return value.slice(1, -1).replace(/\\(['\\])/g, '$1')
-  }
-  const arithmetic = evaluateArithmetic(value)
-  if (arithmetic !== null) return String(arithmetic)
-  if (/^(true|false|null|None|True|False)$/.test(value)) return value
-  return null
-}
-
-function runLocalFallback(
-  code: string,
-  language: CodeLanguage,
-): Pick<ExecutionResult, 'stdout' | 'stderr' | 'exitCode'> {
-  const output: string[] = []
-  const pattern =
-    language === 'python'
-      ? /^\s*print\s*\((.*)\)\s*$/
-      : language === 'cpp'
-        ? /^\s*std::cout\s*<<\s*(.*?)\s*;?\s*$/
-        : /^\s*console\.log\s*\((.*)\)\s*;?\s*$/
-
-  for (const line of code.split(/\r?\n/)) {
-    if (!line.trim() || line.trim().startsWith('#') || line.trim().startsWith('//')) {
-      continue
-    }
-    const match = line.match(pattern)
-    if (!match) continue
-    const literal = decodeLiteral(match[1])
-    if (literal === null) {
-      return {
-        stdout: output.join('\n'),
-        stderr:
-          'Offline fallback supports literal print(...) and console.log(...) statements only. Reconnect to run the full program.',
-        exitCode: 1,
-      }
-    }
-    output.push(literal)
-  }
-
-  if (output.length === 0) {
-    return {
-      stdout: '',
-      stderr:
-        'Piston is unavailable. The offline fallback can evaluate literal print(...) and console.log(...) statements only.',
-      exitCode: 1,
-    }
-  }
-  return { stdout: output.join('\n'), stderr: '', exitCode: 0 }
-}
-
 async function executeWithPiston(
   code: string,
   language: CodeLanguage,
@@ -248,13 +117,14 @@ async function executeWithPiston(
       source: 'Piston',
     }
   } catch (error) {
-    const fallback = runLocalFallback(code, language)
     const reason =
       error instanceof Error ? error.message : 'Piston could not be reached.'
     return {
-      ...fallback,
+      stdout: '',
+      stderr: `${reason} Code execution is unavailable until the runner reconnects.`,
+      exitCode: 1,
       executionMs: performance.now() - startedAt,
-      source: `Local fallback · ${reason}`,
+      source: 'Piston unavailable',
     }
   } finally {
     window.clearTimeout(timeoutId)
