@@ -59,8 +59,7 @@ export function DevRig() {
   const [command, setCommand] = useState('')
   const [snapshotMessage, setSnapshotMessage] = useState('')
   const [audit, setAudit] = useState<string[]>([])
-  const [followCursor, setFollowCursor] = useState(false)
-  const [activePeers, setActivePeers] = useState(true)
+  const [code2GetherNotice, setCode2GetherNotice] = useState(false)
   const [running, setRunning] = useState(false)
   const [runningTime, setRunningTime] = useState<number | null>(null)
   const [exitCode, setExitCode] = useState<number | null>(null)
@@ -185,7 +184,7 @@ export function DevRig() {
   const js = activeFile.name.endsWith('.js') ? activeFile.content : room.workspaceFiles.find((file) => file.name.endsWith('.js'))?.content ?? ''
   const previewHtml = html.replace('</head>', `<style>${css}</style></head>`).replace('</body>', `<script>${js.replace(/<\/script/gi, '<\\/script')}</script></body>`)
 
-  return <section className="flex min-h-0 flex-1 flex-col overflow-hidden" aria-label="Collaborative Dev Rig">
+  return <section className="flex min-h-0 flex-1 flex-col overflow-hidden" aria-label="Code editor">
     <div className="flex min-h-0 flex-1">
       <aside className="hidden w-[190px] shrink-0 flex-col border-r border-white/[0.07] bg-[#09090B] sm:flex">
         <div className="flex items-center justify-between px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-500"><span>Explorer</span><button onClick={promptNewFile} aria-label="Create file" title="New file">＋</button></div>
@@ -202,16 +201,20 @@ export function DevRig() {
         <div className="flex min-h-9 items-center justify-between border-b border-white/[0.07]">
           <div className="scrollbar-thin flex min-w-0 flex-1 overflow-x-auto">{openFiles.map((file) => <div key={file.id} className={`flex shrink-0 items-center gap-2 border-r border-white/[0.06] px-3 py-2 text-[11px] ${activeFile.id === file.id ? 'bg-white/[0.06] text-white' : 'text-neutral-500'}`}><button onClick={() => setActiveFile(file.id)} className="flex items-center gap-2"><span>{codeLanguage(file.name)}</span>{file.name}</button><button onClick={() => closeWorkspaceFile(file.id)} aria-label={`Close ${file.name}`} className="text-neutral-500 hover:text-white">×</button></div>)}</div>
           <div className="flex shrink-0 items-center gap-1 px-2">
-            <button onClick={() => setActivePeers((value) => !value)} className={`rounded px-2 py-1 text-[10px] ${activePeers ? 'text-emerald-300' : 'text-neutral-500'}`}>👥 Collab {activePeers ? 'Live' : 'Off'}</button>
-            <button onClick={() => setFollowCursor((value) => !value)} title={followCursor ? 'Stop following teammate cursor' : 'Follow teammate cursor'} className="rounded px-2 py-1 text-[10px] text-neutral-400">{followCursor ? 'Following' : 'Follow'}</button>
+            <button type="button" onClick={() => setCode2GetherNotice(true)} className="rounded px-2 py-1 text-[10px] text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-white">Connect to Code2Gether</button>
           </div>
         </div>
-        {activePeers && <div className="flex h-7 shrink-0 items-center gap-2 border-b border-white/[0.05] px-3 text-[9px] text-neutral-500"><span className="rounded bg-violet-400/15 px-1.5 text-violet-300">Nova · L12</span><span className="rounded bg-sky-400/15 px-1.5 text-sky-300">Kai · L24</span>{followCursor && <span>Following Nova's cursor</span>}</div>}
+        {code2GetherNotice && (
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/[0.07] bg-white/[0.025] px-3 py-2 text-xs text-neutral-300" role="status">
+            <span>Campfire is currently being developed. Please stand by.</span>
+            <button type="button" onClick={() => setCode2GetherNotice(false)} className="text-neutral-500 hover:text-white" aria-label="Dismiss message">×</button>
+          </div>
+        )}
         <div className="flex h-10 shrink-0 items-center justify-between border-b border-white/[0.07] px-2">
           <span className="truncate font-mono text-[10px] text-neutral-500">{activeFile.name}</span>
           <div className="flex gap-1">
             <button onClick={format} className="rounded px-2 py-1 text-[10px] text-neutral-300 hover:bg-white/10">⚡ Format</button>
-            <button onClick={() => sendMessage(`Shared ${activeFile.name}:\n\`\`\`\n${activeFile.content}\n\`\`\``)} className="rounded px-2 py-1 text-[10px] text-neutral-300 hover:bg-white/10">🔗 Share Diff to Chat</button>
+            <button onClick={() => sendMessage(`Shared ${activeFile.name}:\n\`\`\`\n${activeFile.content}\n\`\`\``)} className="rounded px-2 py-1 text-[10px] text-neutral-300 hover:bg-white/10">Post to Chat</button>
             <button onClick={() => void run()} disabled={running} className="rounded bg-white px-2 py-1 text-[10px] font-semibold text-black disabled:opacity-50">▶ {running ? 'Running…' : 'Run Code'}</button>
           </div>
         </div>
