@@ -123,7 +123,7 @@ export function TopBurnHeader() {
             <span className="sm:hidden">+15m</span>
           </button>
           <button type="button" aria-label="Export session report" title="Export Session" onClick={exportSession} className="rounded-lg border border-white/10 p-2 text-neutral-400 hover:bg-white/[0.08] hover:text-white"><Download className="h-4 w-4" /></button>
-          <button type="button" aria-label="Connect to Code2Gether" title="Connect to Code2Gether" onClick={() => setModal('connect')} className="rounded-lg border border-white/10 p-2 text-neutral-400 hover:bg-white/[0.08] hover:text-white"><UserPlus className="h-4 w-4" /></button>
+          <button type="button" aria-label="Connect to Code2Gether" title="Connect to Code2Gether" onClick={() => setModal('connect')} className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs text-neutral-300 hover:bg-white/[0.08] hover:text-white"><UserPlus className="h-4 w-4" /><span>Connect to Code2Gether</span></button>
           <button type="button" aria-label="Room settings" title="Room Settings" onClick={() => setModal('settings')} className="rounded-lg border border-white/10 p-2 text-neutral-400 hover:bg-white/[0.08] hover:text-white"><Settings className="h-4 w-4" /></button>
         </div>
       )}
