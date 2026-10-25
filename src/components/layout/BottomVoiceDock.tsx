@@ -1,18 +1,18 @@
 import {
-  Headphones,
   Mic,
   MicOff,
-  Phone,
-  PhoneOff,
   ScreenShare,
   Volume2,
   Waves,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '../../lib/cn'
 import { useCampfireStore } from '../../store/useCampfireStore'
-import { UserProfilePopover } from '../UserProfilePopover'
 import { SoundscapeMixer } from './SoundscapeMixer'
+
+type AudioContextWithSinkId = AudioContext & {
+  setSinkId?: (deviceId: string) => Promise<void>
+}
 
 export function BottomVoiceDock() {
   const rooms = useCampfireStore((state) => state.rooms)
@@ -21,16 +21,26 @@ export function BottomVoiceDock() {
   const updateProfile = useCampfireStore((state) => state.updateProfile)
   const setActiveSupplyTab = useCampfireStore((state) => state.setActiveSupplyTab)
   const room = rooms.find((item) => item.id === activeRoomId) ?? null
-  const muted = profile.muted
-  const deafened = profile.deafened
-  const [inVoice, setInVoice] = useState(true)
-  const noiseOn = profile.brownNoise
+
+  const [micStream, setMicStream] = useState<MediaStream | null>(null)
+  const [micLoading, setMicLoading] = useState(false)
+  const [micError, setMicError] = useState('')
+  const [micLevel, setMicLevel] = useState(0)
+  const [speakerError, setSpeakerError] = useState('')
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null)
   const [screenError, setScreenError] = useState('')
   const [mixerOpen, setMixerOpen] = useState(false)
-  const [profileCard, setProfileCard] = useState<{ name: string; color: string } | null>(null)
+
+  const profileRef = useRef(profile)
+  const micStreamRef = useRef<MediaStream | null>(null)
+  const micContextRef = useRef<AudioContext | null>(null)
+  const micFrameRef = useRef(0)
   const screenStreamRef = useRef<MediaStream | null>(null)
   const previewRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    profileRef.current = profile
+  }, [profile])
 
   useEffect(() => {
     const openMixer = () => setMixerOpen(true)
@@ -38,16 +48,134 @@ export function BottomVoiceDock() {
     return () => window.removeEventListener('campfire:open-soundscape', openMixer)
   }, [])
 
+  const toggleMicrophone = useCallback(async () => {
+    setMicError('')
+    const existing = micStreamRef.current
+    if (existing) {
+      const nextMuted = !profileRef.current.muted
+      existing.getAudioTracks().forEach((track) => { track.enabled = !nextMuted })
+      updateProfile({ muted: nextMuted })
+      return
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMicError('Microphone capture is not supported in this browser.')
+      return
+    }
+
+    setMicLoading(true)
+    try {
+      const current = profileRef.current
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          ...(current.inputDeviceId ? { deviceId: { exact: current.inputDeviceId } } : {}),
+          echoCancellation: current.echoCancellation,
+          noiseSuppression: current.noiseSuppression,
+          autoGainControl: current.autoGainControl,
+        },
+      })
+
+      const context = new AudioContext()
+      const analyser = context.createAnalyser()
+      analyser.fftSize = 256
+      context.createMediaStreamSource(stream).connect(analyser)
+      await context.resume()
+
+      micStreamRef.current = stream
+      micContextRef.current = context
+      setMicStream(stream)
+      stream.getAudioTracks().forEach((track) => { track.enabled = true })
+      updateProfile({ muted: false })
+
+      const samples = new Uint8Array(analyser.fftSize)
+      const measure = () => {
+        if (micStreamRef.current !== stream) return
+        analyser.getByteTimeDomainData(samples)
+        if (profileRef.current.muted) {
+          setMicLevel(0)
+        } else {
+          let sum = 0
+          for (const sample of samples) {
+            const value = (sample - 128) / 128
+            sum += value * value
+          }
+          const rms = Math.sqrt(sum / samples.length)
+          setMicLevel(Math.min(100, Math.round(rms * 180 * profileRef.current.inputVolume / 100)))
+        }
+        micFrameRef.current = requestAnimationFrame(measure)
+      }
+      measure()
+
+      stream.getAudioTracks()[0]?.addEventListener('ended', () => {
+        if (micStreamRef.current !== stream) return
+        micStreamRef.current = null
+        setMicStream(null)
+        setMicLevel(0)
+        updateProfile({ muted: true })
+        void context.close()
+        micContextRef.current = null
+      }, { once: true })
+    } catch (error) {
+      setMicError(error instanceof Error ? error.message : 'Could not access the microphone.')
+      updateProfile({ muted: true })
+    } finally {
+      setMicLoading(false)
+    }
+  }, [updateProfile])
+
+  useEffect(() => {
+    const handler = () => { void toggleMicrophone() }
+    window.addEventListener('campfire:toggle-microphone', handler)
+    return () => window.removeEventListener('campfire:toggle-microphone', handler)
+  }, [toggleMicrophone])
+
   useEffect(() => {
     if (previewRef.current) previewRef.current.srcObject = screenStream
   }, [screenStream])
 
-  useEffect(
-    () => () => {
-      screenStreamRef.current?.getTracks().forEach((track) => track.stop())
-    },
-    [],
-  )
+  useEffect(() => () => {
+    cancelAnimationFrame(micFrameRef.current)
+    micStreamRef.current?.getTracks().forEach((track) => track.stop())
+    micStreamRef.current = null
+    if (micContextRef.current && micContextRef.current.state !== 'closed') {
+      void micContextRef.current.close()
+    }
+    screenStreamRef.current?.getTracks().forEach((track) => track.stop())
+  }, [])
+
+  const testSpeakerOutput = async () => {
+    setSpeakerError('')
+    let context: AudioContext | null = null
+    try {
+      context = new AudioContext()
+      const sinkContext = context as AudioContextWithSinkId
+      const outputDeviceId = profileRef.current.outputDeviceId
+      if (outputDeviceId) {
+        if (!sinkContext.setSinkId) {
+          throw new Error('This browser cannot route audio to a selected output device.')
+        }
+        await sinkContext.setSinkId(outputDeviceId)
+      }
+      await context.resume()
+
+      const oscillator = context.createOscillator()
+      const gain = context.createGain()
+      const now = context.currentTime
+      oscillator.type = 'sine'
+      oscillator.frequency.value = 660
+      gain.gain.setValueAtTime(0.0001, now)
+      gain.gain.exponentialRampToValueAtTime(Math.max(0.001, profileRef.current.outputVolume / 100 * 0.12), now + 0.025)
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32)
+      oscillator.connect(gain)
+      gain.connect(context.destination)
+      oscillator.onended = () => { void context?.close() }
+      oscillator.start(now)
+      oscillator.stop(now + 0.33)
+    } catch (error) {
+      setSpeakerError(error instanceof Error ? error.message : 'Could not play the speaker test.')
+      if (context && context.state !== 'closed') void context.close()
+    }
+  }
 
   const toggleScreenShare = async () => {
     setScreenError('')
@@ -65,202 +193,92 @@ export function BottomVoiceDock() {
     }
 
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: false,
-      })
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
       screenStreamRef.current = stream
-      stream.getVideoTracks()[0].addEventListener(
-        'ended',
-        () => {
-          screenStreamRef.current = null
-          setScreenStream(null)
-          updateProfile({ screenSharing: false, screenStream: null })
-        },
-        { once: true },
-      )
+      stream.getVideoTracks()[0]?.addEventListener('ended', () => {
+        if (screenStreamRef.current !== stream) return
+        screenStreamRef.current = null
+        setScreenStream(null)
+        updateProfile({ screenSharing: false, screenStream: null })
+      }, { once: true })
       setScreenStream(stream)
       updateProfile({ screenSharing: true, screenStream: stream })
       setActiveSupplyTab('live-stage')
     } catch (error) {
-      setScreenError(
-        error instanceof Error
-          ? error.message
-          : 'Could not start screen sharing.',
-      )
+      setScreenError(error instanceof Error ? error.message : 'Could not start screen sharing.')
     }
   }
 
-  return (
-    <div className="flex h-full w-full items-center gap-0">
-      <div className="flex min-w-0 flex-1 basis-0 items-center justify-between gap-3 border-r border-white/[0.1] pr-4">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span className="relative flex h-2.5 w-2.5 shrink-0">
-            {inVoice && (
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#22C55E] opacity-60" />
-            )}
-            <span
-              className={cn(
-                'relative inline-flex h-2.5 w-2.5 rounded-full',
-                inVoice ? 'bg-[#22C55E]' : 'bg-neutral-600',
-              )}
-            />
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-xs font-medium text-white">
-              {inVoice && room ? `Voice · ${room.name}` : 'Voice disconnected'}
-            </p>
-            <p className="text-[10px] text-neutral-500">
-              {inVoice ? '14ms · Connected locally' : 'Voice is off'}
-            </p>
-          </div>
-        </div>
+  const micActive = Boolean(micStream && !profile.muted)
+  const remoteMembers = room?.participants.filter((participant) => participant.id !== 'you') ?? []
 
-        <div className="hidden min-w-0 items-center justify-end gap-1.5 sm:flex">
-          {room?.participants.slice(0, 5).map((participant) => (
-            <button
-              type="button"
-              onClick={() => setProfileCard({ name: participant.name, color: participant.avatarColor })}
-              key={participant.id}
-              title={participant.name}
-              className={cn(
-                'relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 text-[9px] font-semibold text-white',
-                participant.isSpeaking &&
-                  inVoice &&
-                  !deafened &&
-                  'ring-2 ring-[#22C55E]/70',
-              )}
-              style={{ backgroundColor: participant.avatarColor }}
-            >
+  return (
+    <div className="flex h-full w-full items-center gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-2.5 border-r border-white/[0.1] pr-4">
+        <span className={cn('h-2 w-2 shrink-0 rounded-full', micActive ? 'bg-emerald-400' : 'bg-neutral-600')} />
+        <div className="min-w-0">
+          <p className="truncate text-xs font-medium text-white">{room ? 'Audio · ' + room.name : 'Audio devices'}</p>
+          <p className="truncate text-[10px] text-neutral-500">
+            {micActive ? 'Microphone active · local input (' + micLevel + '%)' : micStream ? 'Microphone muted' : 'Microphone off · local preview'}
+          </p>
+        </div>
+        <div className="hidden min-w-0 items-center gap-1.5 xl:flex">
+          {remoteMembers.slice(0, 4).map((participant) => (
+            <span key={participant.id} title={participant.name} className="flex h-7 w-7 items-center justify-center rounded-full border border-white/15 text-[9px] font-semibold text-white" style={{ backgroundColor: participant.avatarColor }}>
               {participant.name.slice(0, 2).toUpperCase()}
-              <span className={cn('absolute -bottom-0.5 -left-0.5 h-2 w-2 rounded-full border border-[#0B0B0E]', participant.status === 'idle' ? 'bg-[#F59E0B]' : participant.status === 'dnd' ? 'bg-[#EF4444]' : participant.status === 'invisible' ? 'bg-[#71717A]' : 'bg-[#22C55E]')} />
-              {(participant.isMuted || (participant.id === 'you' && muted)) && (
-                <MicOff className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-[#0B0B0E] p-0.5 text-neutral-300" />
-              )}
-            </button>
+            </span>
           ))}
-          {screenStream && (
-            <video
-              ref={previewRef}
-              autoPlay
-              muted
-              playsInline
-              aria-label="Screen share preview"
-              className="ml-2 h-8 w-14 rounded-md border border-white/15 bg-black object-cover"
-            />
-          )}
         </div>
       </div>
 
-      <div className="flex min-w-0 flex-1 basis-0 items-center justify-end gap-1.5 pl-4">
+      <div className="flex shrink-0 items-center justify-end gap-1.5">
         <button
           type="button"
           title="Open Soundscape Studio"
           aria-label="Open Soundscape Studio"
           aria-pressed={mixerOpen}
           onClick={() => setMixerOpen((value) => !value)}
-          className={cn(
-            'rounded-lg border p-2 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu active:scale-[0.97]',
-            mixerOpen || noiseOn || profile.rainVolume > 0 || profile.crackleVolume > 0 || profile.binauralVolume > 0
-              ? 'border-amber-300/30 bg-amber-300/10 text-amber-200'
-              : 'border-transparent text-neutral-400 hover:bg-white/[0.06] hover:text-white',
-          )}
+          className={cn('rounded-lg border p-2 transition-colors hover:bg-white/[0.06]', mixerOpen ? 'border-white/20 bg-white/[0.08] text-white' : 'border-transparent text-neutral-400 hover:text-white')}
         >
           <Waves className="h-4 w-4" />
         </button>
         <button
           type="button"
-          title={muted ? 'Unmute microphone' : 'Mute microphone'}
-          aria-label={muted ? 'Unmute microphone' : 'Mute microphone'}
-          aria-pressed={muted}
-          disabled={!inVoice || deafened}
-          onClick={() => updateProfile({ muted: !muted })}
-          className={cn(
-            'rounded-lg border p-2 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50',
-            muted
-              ? 'border-[#EF4444]/35 bg-[#EF4444]/15 text-[#EF4444] shadow-[0_0_12px_rgba(239,68,68,0.18)]'
-              : 'border-white bg-white text-[#09090B] shadow-[0_0_15px_rgba(255,255,255,0.2)]',
-          )}
+          title={micStream ? profile.muted ? 'Unmute microphone' : 'Mute microphone' : 'Enable microphone'}
+          aria-label={micStream ? profile.muted ? 'Unmute microphone' : 'Mute microphone' : 'Enable microphone'}
+          aria-pressed={micActive}
+          disabled={micLoading}
+          onClick={() => { void toggleMicrophone() }}
+          className={cn('rounded-lg border p-2 transition-colors disabled:cursor-wait disabled:opacity-50', micActive ? 'border-white bg-white text-[#09090B]' : 'border-transparent text-neutral-400 hover:bg-white/[0.06] hover:text-white')}
         >
-          {muted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          {micLoading ? <span className="block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : micActive ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
         </button>
         <button
           type="button"
-          title={deafened ? 'Undeafen' : 'Deafen'}
-          aria-label={deafened ? 'Undeafen' : 'Deafen'}
-          aria-pressed={deafened}
-          disabled={!inVoice}
-          onClick={() => {
-            const next = !deafened
-            updateProfile({ deafened: next, muted: next || muted })
-          }}
-          className={cn(
-            'rounded-lg border p-2 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50',
-            deafened
-              ? 'border-[#EF4444]/35 bg-[#EF4444]/15 text-[#EF4444]'
-              : 'border-transparent text-neutral-400 hover:bg-white/[0.06] hover:text-white',
-          )}
+          title="Test speaker output"
+          aria-label="Test speaker output"
+          onClick={() => { void testSpeakerOutput() }}
+          className="rounded-lg border border-transparent p-2 text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-white"
         >
-          {deafened ? (
-            <Headphones className="h-4 w-4" />
-          ) : (
-            <Volume2 className="h-4 w-4" />
-          )}
+          <Volume2 className="h-4 w-4" />
         </button>
         <button
           type="button"
           title={screenStream ? 'Stop screen share' : 'Share screen'}
           aria-label={screenStream ? 'Stop screen share' : 'Share screen'}
           aria-pressed={Boolean(screenStream)}
-          onClick={() => void toggleScreenShare()}
-          className={cn(
-            'relative rounded-lg border p-2 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu active:scale-[0.97]',
-            screenStream
-              ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300'
-              : 'border-transparent text-neutral-400 hover:bg-white/[0.06] hover:text-white',
-          )}
+          onClick={() => { void toggleScreenShare() }}
+          className={cn('relative rounded-lg border p-2 transition-colors', screenStream ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300' : 'border-transparent text-neutral-400 hover:bg-white/[0.06] hover:text-white')}
         >
           <ScreenShare className="h-4 w-4" />
-          {screenStream && <span className="absolute -right-2 -top-1 rounded bg-red-500 px-1 text-[7px] font-bold leading-3 text-white">LIVE</span>}
         </button>
-        <button
-          type="button"
-          title={inVoice ? 'Disconnect voice' : 'Connect voice'}
-          aria-label={inVoice ? 'Disconnect voice' : 'Connect voice'}
-          onClick={() => {
-            const next = !inVoice
-            setInVoice(next)
-            if (!next) {
-              updateProfile({ muted: true, deafened: false })
-            }
-          }}
-          className={cn(
-            'flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-semibold transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu active:scale-[0.97]',
-            inVoice
-              ? 'bg-[#EF4444]/15 text-[#EF4444] hover:bg-[#EF4444]/25'
-              : 'bg-[#22C55E]/15 text-[#22C55E] hover:bg-[#22C55E]/25',
-          )}
-        >
-          {inVoice ? (
-            <PhoneOff className="h-3.5 w-3.5" />
-          ) : (
-            <Phone className="h-3.5 w-3.5" />
-          )}
-          <span className="hidden sm:inline">{inVoice ? 'Leave' : 'Join'}</span>
-        </button>
-        {screenError && (
-          <p
-            className="max-w-24 truncate text-[10px] text-red-400"
-            title={screenError}
-            role="status"
-            aria-live="polite"
-          >
-            {screenError}
-          </p>
-        )}
-          <SoundscapeMixer open={mixerOpen} onClose={() => setMixerOpen(false)} />
-        {profileCard && <UserProfilePopover name={profileCard.name} color={profileCard.color} onClose={() => setProfileCard(null)} />}
       </div>
+      {(micError || speakerError || screenError) && (
+        <p className="max-w-48 truncate text-[10px] text-red-300" role="status" title={[micError, speakerError, screenError].filter(Boolean).join(' · ')}>
+          {[micError, speakerError, screenError].filter(Boolean)[0]}
+        </p>
+      )}
+      <SoundscapeMixer open={mixerOpen} onClose={() => setMixerOpen(false)} />
     </div>
   )
 }
