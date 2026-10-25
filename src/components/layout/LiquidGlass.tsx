@@ -1,14 +1,13 @@
 import { useEffect } from 'react'
 import liquidGL from 'liquid-gl'
 
-// liquidGL snapshots and refracts page content through a GPU-backed lens.
-// Keep the initial integration scoped to the bottom dock to limit GPU work.
+// Start with one dock so the GPU-backed effect stays contained and measurable.
 export function LiquidGlass() {
   useEffect(() => {
-    const element = document.querySelector<HTMLElement>('.liquid-glass-dock')
-    if (!element) return
+    const target = document.querySelector<HTMLElement>('.liquid-glass-dock')
+    if (!target) return
 
-    const glass = liquidGL({
+    const lens = liquidGL({
       target: '.liquid-glass-dock',
       engine: 'auto',
       snapshot: 'body',
@@ -24,7 +23,7 @@ export function LiquidGlass() {
     })
 
     return () => {
-      glass.destroy()
+      lens?.destroy()
     }
   }, [])
 
