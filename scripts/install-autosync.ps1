@@ -5,17 +5,16 @@ $node = (Get-Command node -ErrorAction Stop).Source
 $taskName = 'CampfireGitAutoPush'
 $scriptPath = Join-Path $repoRoot 'scripts\autosync.mjs'
 $escapeXml = { param([string]$Value) [System.Security.SecurityElement]::Escape($Value) }
-$startBoundary = (Get-Date).AddMinutes(30).ToString("yyyy-MM-dd'T'HH:mm:ssK")
+$startBoundary = (Get-Date).AddDays(1).ToString("yyyy-MM-dd'T'HH:mm:ssK")
 $userId = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 $taskXml = @"
 <?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
-  <RegistrationInfo><Description>Push committed main changes to Campfire origin every 30 minutes.</Description></RegistrationInfo>
+  <RegistrationInfo><Description>Push committed main changes to Campfire origin every 24 hours.</Description></RegistrationInfo>
   <Triggers>
     <CalendarTrigger>
       <StartBoundary>$startBoundary</StartBoundary>
       <Enabled>true</Enabled>
-      <Repetition><Interval>PT30M</Interval><Duration>P1D</Duration><StopAtDurationEnd>false</StopAtDurationEnd></Repetition>
       <ScheduleByDay><DaysInterval>1</DaysInterval></ScheduleByDay>
     </CalendarTrigger>
   </Triggers>
@@ -47,4 +46,4 @@ $taskXml = @"
 "@
 
 Register-ScheduledTask -TaskName $taskName -Xml $taskXml -Force | Out-Null
-Write-Output "Installed $taskName. It checks origin/main every 30 minutes while this user is signed in."
+Write-Output "Installed $taskName. It checks origin/main every 24 hours while this user is signed in."

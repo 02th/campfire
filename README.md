@@ -117,7 +117,7 @@ Vite prints the local preview URL, typically `http://localhost:5173`.
 ```bash
 npm run dev       # Start the Vite development server
 npm run autosync  # Run one safe push check for committed main changes
-npm run autosync:install   # Windows: schedule checks every 30 minutes
+npm run autosync:install   # Windows: schedule checks every 24 hours
 npm run autosync:uninstall # Windows: remove the scheduled task
 npm run build     # TypeScript project build and production Vite build
 npm run lint      # Run Oxlint
@@ -134,7 +134,7 @@ The UI is currently local-first, so Git is the source-control collaboration path
 4. Review the staged diff, commit with a descriptive message, and push your branch.
 5. Open a pull request for review before merging shared changes.
 
-On Windows, `npm run autosync:install` registers a per-user Task Scheduler task that checks every 30 minutes and pushes **already-committed changes on `main` only** to `origin/main`. It does not stage files, create commits, or push other branches. If the remote has commits missing locally, the task skips the push and asks you to reconcile the branch manually. The task uses the current user's Git credentials and runs while that user is signed in. Use `npm run autosync:uninstall` to remove it. `npm run autosync` runs a single check immediately.
+On Windows, `npm run autosync:install` registers a per-user Task Scheduler task that checks once every 24 hours and pushes **already-committed changes on `main` only** to `origin/main`. It does not stage files, create commits, or push other branches. If the remote has commits missing locally, the task skips the push and asks you to reconcile the branch manually. The task uses the current user's Git credentials and runs while that user is signed in. Use `npm run autosync:uninstall` to remove it. `npm run autosync` runs a single check immediately.
 
 Review and commit changes normally; uncommitted and untracked files are never uploaded by autosync. Do not commit secrets or unfinished work to `main`. VS Code auto-fetch is enabled independently of this push schedule.
 
