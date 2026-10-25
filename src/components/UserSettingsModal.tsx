@@ -13,7 +13,6 @@ export function UserSettingsModal({ onClose }: { onClose: () => void }) {
   const [micError, setMicError] = useState('')
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const supportsDeviceEnumeration = typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.enumerateDevices)
-  const [saved, setSaved] = useState(false)
   const endpoint = useRef({ stream: null as MediaStream | null, context: null as AudioContext | null, frame: 0 })
   useEffect(() => {
     if (!navigator.mediaDevices?.enumerateDevices) return
@@ -110,7 +109,7 @@ export function UserSettingsModal({ onClose }: { onClose: () => void }) {
           {(section === 'My Account' || section === 'User Profile') && <div className="space-y-5">
             {input('Display Name', 'displayName')}{input('Username (@handle)', 'username')}{input('Pronouns', 'pronouns')}{input('Bio / About Me', 'bio')}{input('Custom Status', 'customStatus')}{input('Avatar Initials', 'avatarInitials')}
             <label className="block space-y-2 text-xs text-neutral-400">Avatar Accent Color<input type="color" value={profile.avatarColor} onChange={(event) => updateProfile({ avatarColor: event.target.value })} className="ml-3 h-8 w-12 rounded border-0 bg-transparent" /></label>
-            <p className="text-[10px] text-neutral-500">Profile edits update locally as you type.</p><button onClick={() => { setSaved(true); window.setTimeout(() => setSaved(false), 1600) }} className="rounded-lg bg-white px-4 py-2 text-xs font-semibold text-black">{saved ? 'Saved ✓' : 'Save Changes'}</button>
+            <p className="text-[10px] text-neutral-500">Profile edits apply immediately in this browser session.</p>
           </div>}
           {section === 'Voice & Audio' && <div className="space-y-6">
             <label className="block text-xs text-neutral-400">Input device<select value={profile.inputDeviceId} className="glass-input mt-2 block w-full rounded-lg p-2 text-white" onChange={(event) => updateProfile({ inputDeviceId: event.target.value })}><option value="">Default microphone</option>{devices.filter((device) => device.kind === 'audioinput').map((device) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Microphone ${device.deviceId.slice(0, 6)}`}</option>)}</select></label>
