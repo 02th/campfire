@@ -157,7 +157,7 @@ export function DevRig() {
   const css = room.workspaceFiles.find((file) => file.name.endsWith('.css'))?.content ?? ''
   const js = activeFile.name.endsWith('.js') ? activeFile.content : room.workspaceFiles.find((file) => file.name.endsWith('.js'))?.content ?? ''
   const previewHtml = html
-    ? html.replace('</head>', \`<style>\${css}</style></head>\`).replace('</body>', \`<script>\${js.replace(/<\\/script/gi, '<\\\\/script')}</script></body>\`)
+    ? html.replace('</head>', `<style>${css}</style></head>`).replace('</body>', `<script>${js.replace(/<\/script/gi, '<\\/script')}</script></body>`)
     : ''
 
   return <section className="flex min-h-0 flex-1 flex-col overflow-hidden" aria-label="Code editor">
