@@ -18,12 +18,9 @@ export function TopBurnHeader() {
   const adjustTimer = useCampfireStore((state) => state.adjustTimer)
   const resetTimer = useCampfireStore((state) => state.resetTimer)
   const deleteRoom = useCampfireStore((state) => state.deleteRoom)
-  const addParticipant = useCampfireStore((state) => state.addParticipant)
   const sendMessage = useCampfireStore((state) => state.sendMessage)
   const room = rooms.find((item) => item.id === activeRoomId) ?? null
-  const [modal, setModal] = useState<'settings' | 'invite' | null>(null)
-  const [copied, setCopied] = useState(false)
-  const [copyError, setCopyError] = useState('')
+  const [modal, setModal] = useState<'settings' | 'connect' | null>(null)
   const [profileCard, setProfileCard] = useState<{ name: string; color: string } | null>(null)
   const exportSession = () => {
     if (!room) return
@@ -54,19 +51,6 @@ export function TopBurnHeader() {
     anchor.download = `${room.name.replace(/[^\w-]+/g, '-')}-session.md`
     anchor.click()
     URL.revokeObjectURL(url)
-  }
-  const copyInvite = async () => {
-    if (!room) return
-    try {
-      if (!navigator.clipboard) throw new Error('Clipboard access is unavailable in this browser.')
-      await navigator.clipboard.writeText(`https://campfire.gg/ember/${room.id}`)
-      setCopyError('')
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 1800)
-    } catch (error) {
-      setCopied(false)
-      setCopyError(error instanceof Error ? error.message : 'Could not copy the invite link.')
-    }
   }
   useEffect(() => {
     if (!modal) return
@@ -140,13 +124,13 @@ export function TopBurnHeader() {
             <span className="sm:hidden">+15m</span>
           </button>
           <button type="button" aria-label="Export session report" title="Export Session" onClick={exportSession} className="rounded-lg border border-white/10 p-2 text-neutral-400 hover:bg-white/[0.08] hover:text-white"><Download className="h-4 w-4" /></button>
-          <button type="button" aria-label="Invite people" title="Invite People" onClick={() => setModal('invite')} className="rounded-lg border border-white/10 p-2 text-neutral-400 hover:bg-white/[0.08] hover:text-white"><UserPlus className="h-4 w-4" /></button>
+          <button type="button" aria-label="Connect to Code2Gether" title="Connect to Code2Gether" onClick={() => setModal('connect')} className="rounded-lg border border-white/10 p-2 text-neutral-400 hover:bg-white/[0.08] hover:text-white"><UserPlus className="h-4 w-4" /></button>
           <button type="button" aria-label="Room settings" title="Room Settings" onClick={() => setModal('settings')} className="rounded-lg border border-white/10 p-2 text-neutral-400 hover:bg-white/[0.08] hover:text-white"><Settings className="h-4 w-4" /></button>
         </div>
       )}
       {modal && room && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-md" onClick={() => setModal(null)}>
-        <section role="dialog" aria-modal="true" aria-label={modal === 'settings' ? 'Room settings' : 'Invite people'} onClick={(event) => event.stopPropagation()} className="glass-panel-dense w-full max-w-lg rounded-2xl p-5">
-          <header className="mb-5 flex items-center justify-between"><h2 className="text-lg font-semibold text-white">{modal === 'settings' ? 'Room Settings' : 'Invite People'}</h2><button onClick={() => setModal(null)} aria-label="Close"><X className="h-4 w-4 text-neutral-400" /></button></header>
+        <section role="dialog" aria-modal="true" aria-label={modal === 'settings' ? 'Room settings' : 'Code2Gether'} onClick={(event) => event.stopPropagation()} className="glass-panel-dense w-full max-w-lg rounded-2xl p-5">
+          <header className="mb-5 flex items-center justify-between"><h2 className="text-lg font-semibold text-white">{modal === 'settings' ? 'Room Settings' : 'Connect to Code2Gether'}</h2><button onClick={() => setModal(null)} aria-label="Close"><X className="h-4 w-4 text-neutral-400" /></button></header>
           {modal === 'settings' ? <div className="space-y-4">
             <label className="block space-y-1 text-xs text-neutral-400">Room Name<input value={room.name} onChange={(event) => updateRoom({ name: event.target.value })} className="glass-input w-full rounded-lg px-3 py-2 text-sm text-white outline-none" /></label>
             <label className="block space-y-1 text-xs text-neutral-400">Topic / Goal<input value={room.topic} onChange={(event) => updateRoom({ topic: event.target.value })} className="glass-input w-full rounded-lg px-3 py-2 text-sm text-white outline-none" /></label>
@@ -155,12 +139,9 @@ export function TopBurnHeader() {
             <label className="block space-y-1 text-xs text-neutral-400">Category<select value={room.category} onChange={(event) => updateRoom({ category: event.target.value as RoomCategory })} className="glass-input w-full rounded-lg p-2 text-white"><option>DSA &amp; Coding</option><option>Chem &amp; Bio</option><option>Music &amp; Beats</option><option>General Grind</option></select></label>
             <label className="flex items-center justify-between text-sm text-neutral-300">Slowmode<input type="checkbox" checked={room.slowmode} onChange={(event) => updateRoom({ slowmode: event.target.checked })} className="accent-white" /></label>
             <div className="border-t border-red-500/20 pt-3"><button onClick={() => { deleteRoom(room.id); setModal(null) }} className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-400 hover:bg-red-500/20">🔥 Extinguish (Delete) Campfire</button></div>
-          </div> : <div className="space-y-4">
-            <p className="text-xs text-neutral-400">Share this link to invite someone to {room.name}.</p>
-            <div className="flex gap-2"><input readOnly value={`https://campfire.gg/ember/${room.id}`} className="glass-input min-w-0 flex-1 rounded-lg px-3 py-2 text-xs text-neutral-200" /><button onClick={() => void copyInvite()} className={`rounded-lg px-3 py-2 text-xs font-semibold ${copied ? 'bg-[#22C55E] text-black' : 'bg-white text-black'}`}>{copied ? 'Copied! ✓' : 'Copy Invite Link'}</button></div>
-            {copyError && <p role="alert" className="text-[10px] text-red-300">{copyError}</p>}
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Online friends</h3>
-            {['Nova', 'Kai', 'Rhea', 'Mira'].map((friend) => { const added = room.participants.some((participant) => participant.name === friend); return <div key={friend} className="flex items-center justify-between border-t border-white/[0.06] py-2 text-sm text-neutral-200">{friend}<button disabled={added} onClick={() => addParticipant(friend)} className="rounded-md border border-white/10 px-3 py-1 text-xs hover:bg-white/10 disabled:text-emerald-300">{added ? 'Added ✓' : 'Add to Room'}</button></div> })}
+          </div> : <div className="space-y-3">
+            <p className="text-sm text-neutral-300">Campfire is currently being developed. Please stand by.</p>
+            <p className="text-xs leading-relaxed text-neutral-500">Online invites and shared presence will be available when collaboration is ready.</p>
           </div>}
           {profileCard && <UserProfilePopover name={profileCard.name} color={profileCard.color} onClose={() => setProfileCard(null)} />}
         </section>
