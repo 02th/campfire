@@ -264,7 +264,7 @@ export function Whiteboard() {
   }
   const addFollowUp = () => {
     if (!followUp.trim()) return
-    setWhiteboardMarks([...marks, { id: crypto.randomUUID(), tool: 'text', color: '#F43F5E', points: [{ x: 0.1, y: 0.88 }], text: `Tutor note: ${followUp.trim()}` }])
+    setWhiteboardMarks([...marks, { id: crypto.randomUUID(), tool: 'text', color: '#F43F5E', points: [{ x: 0.1, y: 0.88 }], text: `Note: ${followUp.trim()}` }])
     setFollowUp('')
   }
 
