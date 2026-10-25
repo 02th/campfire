@@ -120,7 +120,7 @@ export function UserSettingsModal({ onClose }: { onClose: () => void }) {
             {toggle('Echo Cancellation', 'echoCancellation')}{toggle('Noise suppression', 'noiseSuppression')}{toggle('Auto Gain Control', 'autoGainControl')}
           </div>}
           {section === 'Soundscape Mixer' && <div className="space-y-4">
-            {slider('Deep Brown Noise', 'noiseVolume')}{slider('Warm Midnight Rain', 'rainVolume')}{slider('Campfire Crackle', 'crackleVolume')}{slider('Binaural Focus Pulse', 'binauralVolume')}
+            {slider('Brown noise', 'noiseVolume')}{slider('Rain ambience', 'rainVolume')}{slider('Fire crackle', 'crackleVolume')}{slider('Binaural tone', 'binauralVolume')}
           </div>}
           {section === 'Appearance' && <div className="space-y-4">
             <label className="block text-sm text-neutral-300">Chat Message Density<select value={profile.messageDensity} onChange={(event) => updateProfile({ messageDensity: event.target.value as typeof profile.messageDensity })} className="glass-input mt-2 block w-full rounded-lg p-2 text-white"><option value="cozy">Cozy · avatars</option><option value="compact">Compact · IRC style</option></select></label>
