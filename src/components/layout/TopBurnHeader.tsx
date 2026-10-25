@@ -18,7 +18,6 @@ export function TopBurnHeader() {
   const adjustTimer = useCampfireStore((state) => state.adjustTimer)
   const resetTimer = useCampfireStore((state) => state.resetTimer)
   const deleteRoom = useCampfireStore((state) => state.deleteRoom)
-  const sendMessage = useCampfireStore((state) => state.sendMessage)
   const room = rooms.find((item) => item.id === activeRoomId) ?? null
   const [modal, setModal] = useState<'settings' | 'connect' | null>(null)
   const [profileCard, setProfileCard] = useState<{ name: string; color: string } | null>(null)
@@ -76,7 +75,7 @@ export function TopBurnHeader() {
               </span>
             )}
           </div>
-          {room && (
+          {room?.topic && (
             <p className="truncate text-[10px] text-neutral-500">{room.topic}</p>
           )}
         </div>
@@ -114,7 +113,7 @@ export function TopBurnHeader() {
 
           <button
             type="button"
-            onClick={() => { addFuel(); sendMessage('🔥 Stoke +15m · fuel added to this campfire.') }}
+            onClick={() => addFuel()}
             aria-label="Stoke this campfire with 15 minutes"
             title="Add 15 minutes"
             className="glass-btn-primary flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu active:scale-[0.97] sm:px-3"
