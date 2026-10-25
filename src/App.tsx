@@ -17,21 +17,24 @@ export default function App() {
   useEffect(() => {
     startCampfireTicker()
 
-    // All glass targets share the app shell as their sticky anchor and the same z-index,
-    // so liquid-gl uses one viewport-sized canvas rather than one canvas per panel.
-    // WebGL2 avoids the zero-sized texture error seen with the WebGPU initialization path.
+    // Share one renderer across the shell, and explicitly track content that changes
+    // when the active workspace tab changes. WebGL2 avoids the Dawn/WebGPU texture
+    // validation error seen on some Chromium builds.
     let lenses: LiquidGlassLens[] = []
     try {
       const glass = liquidGL({
         target: '.liquid-glass',
+        snapshot: 'body',
         engine: 'webgl2',
+        zIndex: 20,
+        reveal: 'none',
         refraction: 0.008,
         bevelDepth: 0.08,
         bevelWidth: 0.12,
-        frost: 0.35,
+        frost: 0.28,
         shadow: true,
         specular: true,
-        tint: 'rgba(12, 12, 18, 0.22)',
+        tint: 'rgba(12, 12, 18, 0.16)',
       })
 
       lenses = glass
@@ -39,6 +42,10 @@ export default function App() {
           ? (glass as unknown as LiquidGlassLens[])
           : [glass as unknown as LiquidGlassLens]
         : []
+
+      // React replaces this region when workspace tabs change; register it so the
+      // captured texture follows the current content rather than retaining old frames.
+      liquidGL.registerDynamic('.liquid-glass-dynamic')
     } catch (error) {
       // Keep the existing CSS glass styling if GPU initialization fails.
       console.error('liquid-gl initialization failed; keeping CSS glass fallback.', error)
@@ -66,7 +73,7 @@ export default function App() {
           </header>
 
           {/* Supply Dock */}
-          <main className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          <main className="liquid-glass-dynamic flex-1 min-h-0 flex flex-col overflow-hidden">
             <SupplyDock />
           </main>
 
