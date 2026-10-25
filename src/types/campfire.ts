@@ -20,7 +20,6 @@ export interface CampfireProfile {
   brownNoise: boolean
   screenSharing: boolean
   screenStream: MediaStream | null
-  simulatedStream: boolean
   aiBaseUrl: string
   aiModel: string
   rainVolume: number
