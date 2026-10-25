@@ -1,4 +1,4 @@
-import { Flame, Plus, Radio, Search, Settings, Mic, MicOff, Headphones, Volume2, X } from 'lucide-react'
+import { Flame, Plus, Search, Settings, Mic, MicOff, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { cn } from '../../lib/cn'
 import {
@@ -39,16 +39,15 @@ export function RadarSidebar() {
         event.preventDefault()
         setSwitcherOpen(true)
       }
-      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'm') updateProfile({ muted: !profile.muted })
-      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'd') {
-        const deafened = !profile.deafened
-        updateProfile({ deafened, muted: deafened || profile.muted })
+      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'm') {
+        event.preventDefault()
+        window.dispatchEvent(new Event('campfire:toggle-microphone'))
       }
       if ((event.ctrlKey || event.metaKey) && event.key === ',') setSettingsOpen(true)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [profile.muted, profile.deafened, updateProfile])
+  }, [updateProfile])
 
   return (
     <div className="relative flex h-full w-full min-h-0 shrink-0 flex-col">
@@ -61,8 +60,7 @@ export function RadarSidebar() {
             CAMPFIRE
           </p>
           <p className="flex items-center gap-1 text-[10px] uppercase tracking-[0.2em] text-neutral-400">
-            <Radio className="h-3 w-3 text-white/70" />
-            Radar live
+            Workspace
           </p>
         </div>
       </div>
@@ -85,6 +83,9 @@ export function RadarSidebar() {
         <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
           Active embers · {rooms.length}
         </p>
+        {rooms.length === 0 && (
+          <p className="px-2 py-3 text-xs leading-relaxed text-neutral-500">No campfires yet. Light one to start a workspace.</p>
+        )}
         {rooms.map((room) => {
           const isActive = room.id === activeRoom?.id
           const progress =
@@ -154,14 +155,13 @@ export function RadarSidebar() {
           </span>
         </button>
         <div className="flex shrink-0 items-center gap-0.5">
-          <button aria-label={profile.muted ? 'Unmute microphone' : 'Mute microphone'} title="Toggle microphone" onClick={() => updateProfile({ muted: !profile.muted })} className={cn('rounded-md p-1.5', profile.muted ? 'text-[#EF4444]' : 'text-neutral-400 hover:text-white')}>{profile.muted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}</button>
-          <button aria-label={profile.deafened ? 'Undeafen' : 'Deafen'} title="Toggle deafen" onClick={() => updateProfile({ deafened: !profile.deafened, muted: !profile.deafened || profile.muted })} className={cn('rounded-md p-1.5', profile.deafened ? 'text-[#EF4444]' : 'text-neutral-400 hover:text-white')}>{profile.deafened ? <Headphones className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}</button>
+          <button aria-label={profile.muted ? 'Enable microphone' : 'Mute microphone'} title={profile.muted ? 'Enable microphone' : 'Mute microphone'} onClick={() => window.dispatchEvent(new Event('campfire:toggle-microphone'))} className={cn('rounded-md p-1.5', profile.muted ? 'text-neutral-400 hover:text-white' : 'text-white')}>{profile.muted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}</button>
           <button aria-label="User settings" title="User settings" onClick={() => setSettingsOpen(true)} className="rounded-md p-1.5 text-neutral-400 hover:rotate-45 hover:text-white"><Settings className="h-4 w-4" /></button>
         </div>
       </div>
       {profileMenu && <div className="absolute bottom-[66px] left-3 z-30 w-[244px] rounded-xl border border-white/10 bg-[#111114]/95 p-3 shadow-2xl backdrop-blur-xl">
         <div className="mb-2 flex items-center justify-between"><span className="text-xs font-semibold text-white">Set your status</span><button onClick={() => setProfileMenu(false)} aria-label="Close"><X className="h-3.5 w-3.5 text-neutral-400" /></button></div>
-        {(['online', 'idle', 'dnd', 'invisible'] as const).map((status) => <button key={status} onClick={() => updateProfile({ status })} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-neutral-300 hover:bg-white/[0.07]"><span className={cn('h-2 w-2 rounded-full', status === 'online' ? 'bg-[#22C55E]' : status === 'idle' ? 'bg-[#F59E0B]' : status === 'dnd' ? 'bg-[#EF4444]' : 'border border-neutral-500')} />{status === 'online' ? '🟢 Online' : status === 'idle' ? '🌙 Idle' : status === 'dnd' ? '⛔ Do Not Disturb' : '⚪ Invisible'}</button>)}
+        {(['online', 'idle', 'dnd', 'invisible'] as const).map((status) => <button key={status} onClick={() => updateProfile({ status })} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-neutral-300 hover:bg-white/[0.07]"><span className={cn('h-2 w-2 rounded-full', status === 'online' ? 'bg-[#22C55E]' : status === 'idle' ? 'bg-[#F59E0B]' : status === 'dnd' ? 'bg-[#EF4444]' : 'border border-neutral-500')} />{status === 'online' ? 'Online' : status === 'idle' ? 'Idle' : status === 'dnd' ? 'Do not disturb' : 'Invisible'}</button>)}
         <div className="my-2 border-t border-white/[0.08]" />
         <div className="mb-1 flex gap-1">{['🎯', '🧪', '🎧', '🔥'].map((emoji) => <button key={emoji} onClick={() => updateProfile({ customStatus: `${emoji} ${profile.customStatus.replace(/^(🎯|🧪|🎧|🔥)\s*/, '')}`.trim() })} className="rounded px-1.5 py-1 hover:bg-white/10">{emoji}</button>)}</div>
         <input value={profile.customStatus.replace(/^(🎯|🧪|🎧|🔥)\s*/, '')} onChange={(event) => updateProfile({ customStatus: event.target.value })} placeholder="Set a custom status…" className="glass-input w-full rounded-md px-2 py-1.5 text-xs text-white outline-none" />
