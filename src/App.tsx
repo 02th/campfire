@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { RadarSidebar } from './components/layout/RadarSidebar'
 import { TopBurnHeader } from './components/layout/TopBurnHeader'
 import { BottomVoiceDock } from './components/layout/BottomVoiceDock'
+import { LiquidGlass } from './components/layout/LiquidGlass'
 import { RightChatSidebar } from './components/layout/RightChatSidebar'
 import { SupplyDock } from './components/supplies/SupplyDock'
 import { CreateCampfireModal } from './components/modals/CreateCampfireModal'
@@ -15,6 +16,7 @@ export default function App() {
 
   return (
     <>
+      <LiquidGlass />
       <div className={`h-screen w-screen overflow-hidden flex bg-[#070709] text-[#F4F4F6] select-none ${profile.reducedMotion ? 'reduce-motion' : ''} ${profile.highContrastBorders ? 'high-contrast' : ''}`}>
         {/* Left Rail: Radar Sidebar */}
         <aside className="w-[260px] shrink-0 h-full flex flex-col bg-[#0B0B0E]/90 backdrop-blur-2xl border-r border-white/[0.07]">
