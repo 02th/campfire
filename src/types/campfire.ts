@@ -16,7 +16,6 @@ export interface CampfireProfile {
   avatarColor: string
   status: UserStatus
   muted: boolean
-  brownNoise: boolean
   screenSharing: boolean
   screenStream: MediaStream | null
   aiBaseUrl: string
